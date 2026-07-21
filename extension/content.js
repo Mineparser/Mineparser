@@ -3,10 +3,11 @@
     const existing = document.querySelector('mineparser-extension-host');
     if (existing) { existing.remove(); return; }
     const host = document.createElement('mineparser-extension-host');
-    host.style.cssText = 'position:fixed;z-index:2147483647;inset:16px auto auto 16px;width:min(94vw,900px);height:min(90vh,760px);border:0;box-shadow:0 18px 60px #0009;';
+    host.style.cssText = 'position:fixed;z-index:2147483647;inset:0;width:100vw;height:100vh;border:0;pointer-events:auto;background:transparent;';
     const shadow = host.attachShadow({ mode: 'closed' });
-    const frame = document.createElement('iframe'); frame.src = chrome.runtime.getURL('web-app.html'); frame.title = 'Mineparser';
-    frame.style.cssText = 'display:block;width:100%;height:100%;border:0;border-radius:14px;background:#071326;';
+    const frame = document.createElement('iframe'); frame.src = chrome.runtime.getURL('web-app.html?extension=1'); frame.title = 'Mineparser';
+    frame.setAttribute('allowtransparency', 'true');
+    frame.style.cssText = 'display:block;width:100%;height:100%;border:0;background:rgba(0,0,0,0);color-scheme:normal;';
     shadow.append(frame); document.documentElement.append(host);
     window.addEventListener('message', event => { if (event.data?.type === 'mineparser-close') host.remove(); }, { once: true });
   }

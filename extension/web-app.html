@@ -18,7 +18,10 @@
 
         .launcher-marker {
             position: fixed;
-            inset: 0;
+            top: 0;
+            left: 0;
+            right: auto;
+            bottom: auto;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -91,6 +94,29 @@
         }
         body.web-mode {
             background: #0a1220 url('assets/mineparser-mountain-bg.png') center / cover fixed no-repeat;
+        }
+        /* The extension is an in-page overlay: keep the current site visible behind it. */
+        html.extension-host-page,
+        body.extension-mode,
+        body.extension-mode.web-mode {
+            background: rgba(0, 0, 0, 0) !important;
+            background-color: rgba(0, 0, 0, 0) !important;
+        }
+        body.extension-mode::before { display: none; }
+        body.extension-mode .container {
+            min-height: 100vh;
+            border-radius: 0;
+            background: transparent !important;
+            box-shadow: none !important;
+        }
+        html:has(body.extension-mode) {
+            background: rgba(0, 0, 0, 0) !important;
+            background-color: rgba(0, 0, 0, 0) !important;
+        }
+        /* Keep the underlying page text readable in every target: no backdrop blur. */
+        html, body, * {
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
         }
         body.web-mode::before {
             content: '';
@@ -1328,7 +1354,7 @@
         }
     </style>
 </head>
-<body>
+<body class="extension-mode">
     <button class="launcher-marker" id="launcherMarker" aria-label="Open Mineparser" title="Open Mineparser">◆</button>
     <div class="container">
         <div class="app-toolbar">
@@ -1353,7 +1379,8 @@
                     <input type="file" id="importFileInput" accept=".json" class="visually-hidden-file-input" aria-hidden="true" tabindex="-1">
                 </div>
                 <div class="search-bar" data-mode="nav">
-                    <input type="text" class="search-input" placeholder="Type to search or navigate..." id="searchInput">
+                    <input type="text" class="search-input" placeholder="Type to search or navigate..." id="searchInput"
+                        autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-form-type="other">
                 </div>
                 <div class="search-label" style="margin-top:5px;">Try typing a keyword, or press a mapped key to navigate.</div>
                 <div id="keyFeedback" aria-live="polite"></div>
@@ -1510,13 +1537,15 @@
             <div class="bind-dialog-section">
                 <div class="bind-dialog-section-title" id="bindNavLabelTitle">1. Navigation label</div>
                 <div class="bind-dialog-section-desc" id="bindNavLabelHelp">A short label shown on the keyboard and used for search.</div>
-                <input type="text" class="bind-dialog-input" id="bindNavLabelInput" placeholder="Example: Rust, debug, deploy">
+                <input type="text" class="bind-dialog-input" id="bindNavLabelInput" placeholder="Example: Rust, debug, deploy"
+                    autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
             </div>
             
             <div class="bind-dialog-section">
                 <div class="bind-dialog-section-title" id="bindSavedTextTitle">2. Saved text</div>
                 <div class="bind-dialog-section-desc" id="bindSavedTextHelp">The prompt, command, or reusable text returned by this item.</div>
-                <textarea class="bind-dialog-textarea" id="bindContentInput" placeholder="Example: Rust: reproduce → isolate&#10;fn main() {&#10;    // debugging code&#10;}"></textarea>
+                <textarea class="bind-dialog-textarea" id="bindContentInput" placeholder="Example: Rust: reproduce → isolate&#10;fn main() {&#10;    // debugging code&#10;}"
+                    autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"></textarea>
             </div>
         </div>
     </div>

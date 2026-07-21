@@ -736,6 +736,9 @@
 
         function collapseMineparser() {
             setMarkerCollapsed(true);
+            if (window.parent !== window) {
+                window.parent.postMessage({ type: 'mineparser-close' }, '*');
+            }
             const invoke = window.__TAURI__?.core?.invoke;
             if (invoke) invoke('collapse_marker').catch((err) => console.warn('Mineparserを閉じられませんでした:', err));
         }
@@ -769,10 +772,11 @@
         if (launcherMarkerEl) launcherMarkerEl.addEventListener('click', () => expandMineparser(true));
         const collapseAppButtonEl = document.getElementById('collapseAppButton');
         if (collapseAppButtonEl) collapseAppButtonEl.addEventListener('click', collapseMineparser);
+        const isExtensionApp = document.body.classList.contains('extension-mode');
         const isWebApp = !window.__TAURI__;
-        if (isWebApp) document.body.classList.add('web-mode');
+        if (isWebApp && !isExtensionApp) document.body.classList.add('web-mode');
         else document.body.classList.add('tauri-mode');
-        setMarkerCollapsed(!isWebApp);
+        setMarkerCollapsed(!isWebApp && !isExtensionApp);
         if (isWebApp) setTimeout(() => document.getElementById('searchInput')?.focus(), 80);
 
         const tauriListen = window.__TAURI__?.event?.listen;
