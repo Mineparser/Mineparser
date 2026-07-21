@@ -179,8 +179,15 @@ TUARI_Mineparser/
 ├─ src-tauri/
 │  └─ src/lib.rs       # ウィンドウ制御、グローバルショートカット、貼り付け
 ├─ test/                # ローカルストアと入力制御のテスト
+├─ extension/           # Chrome / Edge Manifest V3 拡張機能
 └─ docs/                # 開発手順とアーキテクチャ
 ```
+
+## Chrome / Edge 拡張機能
+
+`extension/` はChromeとMicrosoft Edgeで共通利用できるManifest V3版です。検索、キーボードナビ、設定保存、QWERTY／テンキー切替、項目編集、JSON入出力に対応しています。
+
+`chrome://extensions` または `edge://extensions` で開発者モードを有効にし、「パッケージ化されていない拡張機能を読み込む」から `extension/` を選択してください。拡張機能の保存領域はデスクトップ版・Web版とは分離されています。
 
 ## 注意事項
 

@@ -1,0 +1,24 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const read = name => fs.readFileSync(path.join(root, 'extension', name), 'utf8');
+
+test('Chromium extension manifest and required entry points are valid', () => {
+  const manifest = JSON.parse(read('manifest.json'));
+  assert.equal(manifest.manifest_version, 3);
+  assert.equal(manifest.background.service_worker, 'background.js');
+  assert.equal(manifest.action.default_popup, 'app.html');
+  assert.ok(manifest.commands['open-mineparser']);
+  for (const file of ['app.html', 'app.css', 'app.js', 'background.js']) assert.ok(fs.existsSync(path.join(root, 'extension', file)));
+});
+
+test('extension UI exposes persistence, editing, layout, and data transfer controls', () => {
+  const html = read('app.html');
+  const js = read('app.js');
+  for (const id of ['search', 'settings', 'edit', 'export', 'import', 'keyboard']) assert.match(html, new RegExp(`id=["']${id}["']`));
+  for (const token of ['chrome.storage.local', 'showModal', 'JSON.stringify', 'JSON.parse', 'layouts']) assert.match(js, new RegExp(token.replace('.', '\\.' )));
+});
