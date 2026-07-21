@@ -436,15 +436,15 @@
         .keyboard {
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            gap: 20px;
             align-items: center;
             align-self: flex-start;
             width: var(--keyboard-width, 637px);
             box-sizing: border-box;
             background: #2d2d30;
-            padding: 8px 2px 6px;
+            padding: 24px 2px 6px;
             border-radius: 8px;
-            overflow-x: auto;
+            overflow: visible;
             flex: 0 0 auto;
         }
 
@@ -514,7 +514,7 @@
 
         .key-label {
             position: absolute;
-            top: 2px;
+            top: -18px;
             left: 50%;
             transform: translateX(-50%);
             font-size: 11px;
@@ -554,12 +554,12 @@
         /* Narrow phones still use the keyboard as the primary navigation surface. */
         @media (max-width: 420px) {
             .keyboard-section { display: flex; min-height: 0; }
-            .keyboard { gap: 5px; padding: 8px 2px 6px; }
+            .keyboard { gap: 14px; padding: 20px 2px 6px; }
             .keyboard-row { gap: 1px; }
             .keyboard-row.row2 { padding-left: 8px; }
             .keyboard-row.row3 { padding-left: 14px; }
             .keyboard-row.row0 { margin-bottom: 2px; }
-            .key-label { top: 2px; max-width: none; font-size: 7px; line-height: 1; }
+            .key-label { top: -13px; max-width: none; font-size: 7px; line-height: 1; }
             .key.unbound .key-label { display: none; }
             .autocomplete-panel { min-height: 220px; }
         }
