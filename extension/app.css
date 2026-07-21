@@ -1,20 +1,20 @@
 :root { color-scheme: dark; font: 14px system-ui, sans-serif; }
 * { box-sizing: border-box; }
-body { margin: 0; min-width: 250px; background: #0b1729; color: #dbeafe; }
-.app { min-height: 100vh; padding: 14px; background: linear-gradient(135deg,#102b4b,#16243a); }
+body { margin: 0; min-width: 250px; background: #071326 url('assets/mineparser-mountain-bg.png') center / cover fixed no-repeat; color: #dbeafe; }
+.app { min-height: 100vh; padding: clamp(8px, 2vw, 18px); background: rgba(9, 22, 40, .58); backdrop-filter: blur(7px) saturate(120%); }
 header { display: flex; gap: 8px; align-items: center; }
-.badge { padding: 9px 11px; border-radius: 7px; background: #1466a5; font-weight: 700; }
-input { min-width: 0; flex: 1; padding: 11px 12px; border: 1px solid #496987; border-radius: 7px; background: #101f34; color: inherit; font-size: 16px; }
-button,.tool-button { padding: 8px 11px; border: 1px solid #496987; border-radius: 6px; background: #193554; color: inherit; cursor: pointer; }
+.badge { padding: 9px 11px; border-radius: 7px; background: rgba(20,102,165,.86); font-weight: 700; }
+input { min-width: 0; flex: 1; padding: 11px 12px; border: 1px solid rgba(130,180,220,.5); border-radius: 7px; background: rgba(10,25,45,.58); color: inherit; font-size: 16px; }
+button,.tool-button { padding: 8px 11px; border: 1px solid rgba(130,180,220,.5); border-radius: 6px; background: rgba(25,53,84,.84); color: inherit; cursor: pointer; }
 .tools { display: flex; gap: 6px; margin-top: 8px; }
 dialog { border: 1px solid #496987; border-radius: 10px; background: #10233b; color: #dbeafe; padding: 18px; }
 dialog form { display: grid; gap: 12px; min-width: min(360px, 80vw); } dialog input,dialog textarea,dialog select { width: 100%; padding: 9px; background: #0b1729; color: inherit; border: 1px solid #496987; border-radius: 6px; } dialog textarea { min-height: 110px; resize: vertical; } menu { display: flex; justify-content: flex-end; gap: 8px; padding: 0; }
 #hint { color: #9db2c9; }
-#keyboard { display: grid; gap: clamp(8px, 2vw, 14px); padding-top: 22px; overflow: visible; }
+#keyboard { display: grid; gap: clamp(12px, 2vw, 22px); padding: 28px 0 10px; overflow: visible; }
 .row { display: flex; justify-content: center; gap: clamp(2px, .5vw, 5px); }
-.key { position: relative; flex: 1 1 0; min-width: 0; max-width: 78px; aspect-ratio: 1; border: 1px solid #5a718b; border-radius: 6px; background: #243851; color: #e8f2ff; cursor: pointer; }
+.key { position: relative; flex: 1 1 0; min-width: 0; max-width: 86px; aspect-ratio: 1; border: 1px solid rgba(130,160,190,.5); border-radius: 6px; background: rgba(36,56,81,.72); color: #e8f2ff; cursor: pointer; }
 .key:hover,.key.active { background: #17699f; }
 .label { position: absolute; left: 50%; top: -18px; transform: translateX(-50%); max-width: 130px; color: #75e6cf; font-size: clamp(7px, 1.4vw, 11px); white-space: nowrap; overflow: visible; }
-.preview { min-height: 150px; margin-top: 16px; padding: 16px; border-radius: 9px; background: #101d30cc; }
+.preview { min-height: 150px; margin-top: 16px; padding: 16px; border: 1px solid rgba(130,180,220,.25); border-radius: 9px; background: rgba(10,25,45,.72); backdrop-filter: blur(5px); }
 pre { white-space: pre-wrap; color: #b7c8dc; }
 @media (max-width: 420px) { .app { padding: 8px; } .label { font-size: 7px; } .preview { min-height: 120px; } }
