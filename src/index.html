@@ -1062,7 +1062,9 @@
             border: 1px solid #3c3c3c;
             border-radius: 8px;
             padding: 24px;
-            max-width: 360px;
+            width: min(420px, calc(100vw - 32px));
+            max-height: min(560px, calc(100vh - 32px));
+            overflow-y: auto;
             z-index: 999;
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
         }
@@ -1087,7 +1089,8 @@
         }
         .setting-modal-body .setting-row select {
             width: 100%;
-            padding: 6px 8px;
+            min-height: 42px;
+            padding: 8px 12px;
             background: #3c3c3c;
             color: #cccccc;
             border: 1px solid #555;
@@ -1097,6 +1100,7 @@
         .setting-modal-close {
             display: block;
             margin-top: 8px;
+            width: 100%;
             padding: 8px 20px;
             background: #007acc;
             color: #fff;
@@ -1188,6 +1192,12 @@
         .bind-dialog-input:focus,
         .setting-modal-body .setting-row select:focus {
             background: rgba(10, 14, 20, 0.24) !important;
+        }
+        .setting-help-text {
+            margin-top: 8px;
+            color: #8f9bad;
+            font-size: 12px;
+            line-height: 1.45;
         }
 
         .keyboard-title,
@@ -1334,11 +1344,23 @@
                 <div class="setting-modal-title" id="settingModalTitle">Settings</div>
                 <div class="setting-modal-body">
                     <div class="setting-row">
-                        <label for="settingLanguage">Language</label>
-                        <select id="settingLanguage" aria-label="言語を選択">
+                        <label for="settingLanguage">Interface language</label>
+                        <select id="settingLanguage" aria-label="Interface language">
                             <option value="en">English</option>
-                            <option value="en">English</option>
+                            <option value="ja">日本語 — Japanese</option>
+                            <option value="zh-CN">简体中文 — Simplified Chinese</option>
+                            <option value="zh-TW">繁體中文 — Traditional Chinese</option>
+                            <option value="ko">한국어 — Korean</option>
+                            <option value="es">Español — Spanish</option>
+                            <option value="fr">Français — French</option>
+                            <option value="de">Deutsch — German</option>
+                            <option value="pt">Português — Portuguese</option>
+                            <option value="it">Italiano — Italian</option>
+                            <option value="ru">Русский — Russian</option>
+                            <option value="hi">हिन्दी — Hindi</option>
+                            <option value="ar">العربية — Arabic</option>
                         </select>
+                        <div class="setting-help-text">Choose a preferred interface language. Additional translations will be added progressively.</div>
                     </div>
                 </div>
                 <button type="button" class="setting-modal-close" id="settingModalClose">Close</button>
@@ -1440,6 +1462,7 @@
         let lastNavigateToPathAt = 0; // 階層移動直後の input で上書きしないガード用
         let inputMode = 'qwerty'; // レイアウトID（'qwerty' | 'tenkey' | 将来 'dvorak' 等）
         let pasteMode = localStorage.getItem('mineparser.pasteMode') || 'copy';
+        let interfaceLanguage = localStorage.getItem('mineparser.interfaceLanguage') || 'en';
 
         // キーボードレイアウトレジストリ（表示用 keyRows + 物理キー→文字 codeToCharMap）
         const KEYBOARD_LAYOUTS = [
@@ -2361,6 +2384,8 @@
         function openSettingModal() {
             const el = document.getElementById('settingModalOverlay');
             if (!el) return;
+            const languageSelect = document.getElementById('settingLanguage');
+            if (languageSelect) languageSelect.value = interfaceLanguage;
             el.classList.add('show');
             el.setAttribute('aria-hidden', 'false');
         }
@@ -2417,6 +2442,11 @@
         });
         const settingModalCloseEl = document.getElementById('settingModalClose');
         if (settingModalCloseEl) settingModalCloseEl.addEventListener('click', closeSettingModal);
+        const settingLanguageEl = document.getElementById('settingLanguage');
+        if (settingLanguageEl) settingLanguageEl.addEventListener('change', (event) => {
+            interfaceLanguage = event.target.value;
+            localStorage.setItem('mineparser.interfaceLanguage', interfaceLanguage);
+        });
         // モードモーダル: オーバーレイクリック・閉じるボタン
         const modeModalOverlayEl = document.getElementById('modeModalOverlay');
         if (modeModalOverlayEl) modeModalOverlayEl.addEventListener('click', (e) => {
