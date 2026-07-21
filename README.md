@@ -168,6 +168,7 @@ npm run tauri build
 ローカルでのビルドは、基本的に **ビルドしたい OS 上で** 実行してください。Tauri のネイティブバンドル（特に macOS の `.dmg` と Linux の `.deb`／`.AppImage`）は、各 OS のランナーで作るのが安全です。
 
 詳細は [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) と [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) を参照してください。
+各実装の対応状況は [docs/FEATURE_MATRIX.md](docs/FEATURE_MATRIX.md) にまとめています。
 
 ## プロジェクト構成
 
