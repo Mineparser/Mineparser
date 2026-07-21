@@ -204,6 +204,7 @@
             align-items: center;
             gap: 7px;
             flex-wrap: wrap;
+            min-width: 0;
         }
         /* WCAG 2.1 AA 通常テキスト 4.5:1 以上で視認性を確保 */
         .fkey-btn {
@@ -215,6 +216,9 @@
             border-radius: 5px;
             color: #e0e0e0;
             cursor: pointer;
+            white-space: normal;
+            overflow-wrap: anywhere;
+            line-height: 1.2;
         }
         .fkey-btn:hover {
             background: #4a4a4a;
@@ -508,6 +512,8 @@
             .keyboard { width: max-content; min-width: 100%; transform-origin: left top; }
             .fkey-row { gap: 4px; }
             .fkey-btn { min-width: auto; padding: 6px 7px; font-size: 11px; }
+            .fkey-row { width: 100%; }
+            .fkey-btn { flex: 1 1 92px; }
             .search-input { min-height: 42px; font-size: 16px; }
             .key { width: clamp(38px, 8vw, 61px); height: clamp(38px, 8vw, 61px); }
         }
@@ -1490,6 +1496,55 @@
         let inputMode = 'qwerty'; // レイアウトID（'qwerty' | 'tenkey' | 将来 'dvorak' 等）
         let pasteMode = localStorage.getItem('mineparser.pasteMode') || 'copy';
         let interfaceLanguage = localStorage.getItem('mineparser.interfaceLanguage') || 'en';
+
+        const UI_TRANSLATIONS = {
+            en: {
+                settings: 'Settings', language: 'Interface language', languageHelp: 'Choose a preferred interface language.', close: 'Close',
+                mode: 'Mode', copyOnly: 'Copy only', copyOnlyHelp: 'Copy saved text to the clipboard.', pastePrevious: 'Paste to previous app', pastePreviousHelp: 'Return to the previous app and paste automatically.',
+                help: 'Keyboard shortcuts', edit: 'Edit item', cancel: 'Cancel', save: 'Save', navLabel: 'Navigation label', savedText: 'Saved text',
+                navLabelHelp: 'A short label shown on the keyboard and used for search.', savedTextHelp: 'The prompt, command, or reusable text returned by this item.',
+                search: 'Type to search or navigate...', tryTyping: 'Try typing a keyword, or press a mapped key to navigate.'
+            },
+            ja: {
+                settings: '設定', language: '表示言語', languageHelp: '使用する表示言語を選択してください。', close: '閉じる',
+                mode: 'モード', copyOnly: 'コピーのみ', copyOnlyHelp: '保存した文字列をクリップボードへコピーします。', pastePrevious: '元のアプリへ貼り付け', pastePreviousHelp: '呼び出し前のアプリへ戻り、自動で貼り付けます。',
+                help: 'キーボードショートカット', edit: '項目を編集', cancel: 'キャンセル', save: '保存', navLabel: 'ナビゲーションラベル', savedText: '保存する文字列',
+                navLabelHelp: 'キーボードに表示し、検索に使う短いラベルです。', savedTextHelp: '選択したときに返すプロンプト、コマンド、定型文です。',
+                search: '検索または移動...', tryTyping: 'キーワードを入力するか、割り当てキーで移動してください。'
+            }
+        };
+
+        function currentUiText() { return UI_TRANSLATIONS[interfaceLanguage] || UI_TRANSLATIONS.en; }
+
+        function applyUiLanguage() {
+            const t = currentUiText();
+            const setText = (selector, value) => document.querySelectorAll(selector).forEach((el) => { el.textContent = value; });
+            setText('#settingModalTitle', t.settings);
+            setText('label[for="settingLanguage"]', t.language);
+            setText('.setting-help-text', t.languageHelp);
+            setText('#settingModalClose', t.close);
+            setText('#modeModalTitle', t.mode);
+            setText('#modeModalClose', t.close);
+            setText('.mode-choice:nth-of-type(1) strong', t.copyOnly);
+            setText('.mode-choice:nth-of-type(1) small', t.copyOnlyHelp);
+            setText('.mode-choice:nth-of-type(2) strong', t.pastePrevious);
+            setText('.mode-choice:nth-of-type(2) small', t.pastePreviousHelp);
+            setText('#helpModalTitle', t.help);
+            setText('#helpModalClose', t.close);
+            setText('.bind-dialog-title', t.edit);
+            setText('.bind-dialog-button.secondary', t.cancel);
+            setText('.bind-dialog-button.primary', t.save);
+            setText('.bind-dialog-section-title:nth-of-type(1)', `1. ${t.navLabel}`);
+            setText('.bind-dialog-section-title:nth-of-type(2)', `2. ${t.savedText}`);
+            setText('.bind-dialog-section-desc:nth-of-type(1)', t.navLabelHelp);
+            setText('.bind-dialog-section-desc:nth-of-type(2)', t.savedTextHelp);
+            const searchEl = document.getElementById('searchInput');
+            if (searchEl) searchEl.placeholder = t.search;
+            const hintEl = document.querySelector('.search-section > .search-label[style*="margin-top"]');
+            if (hintEl) hintEl.textContent = t.tryTyping;
+            applyLanguageExamples();
+            updateHelpModalText();
+        }
 
         // キーボードレイアウトレジストリ（表示用 keyRows + 物理キー→文字 codeToCharMap）
         const KEYBOARD_LAYOUTS = [
@@ -2494,11 +2549,11 @@
             if (navEl) navEl.placeholder = japanese ? '例: Rust、デバッグ、デプロイ' : 'Example: Rust, debug, deploy';
             if (contentEl) contentEl.placeholder = japanese ? '例: Rust: 再現 → 切り分け\nfn main() {\n    // デバッグコード\n}' : 'Example: Rust: reproduce → isolate\nfn main() {\n    // debugging code\n}';
         }
-        applyLanguageExamples();
+        applyUiLanguage();
         if (settingLanguageEl) settingLanguageEl.addEventListener('change', (event) => {
             interfaceLanguage = event.target.value;
             localStorage.setItem('mineparser.interfaceLanguage', interfaceLanguage);
-            applyLanguageExamples();
+            applyUiLanguage();
         });
         // モードモーダル: オーバーレイクリック・閉じるボタン
         const modeModalOverlayEl = document.getElementById('modeModalOverlay');
