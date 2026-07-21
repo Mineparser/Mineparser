@@ -1,0 +1,3386 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'%3E%3C/svg%3E" type="image/svg+xml">
+    <title>mineparser 階層管理システム</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            background: transparent;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Meiryo', sans-serif;
+            background: transparent;
+            color: #cccccc;
+            padding: 10px;
+            margin: 0;
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            max-width: none;
+            min-height: calc(100vh - 20px);
+            margin: 0;
+            background: rgba(18, 22, 30, 0.34);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 18px;
+            box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+            backdrop-filter: blur(7px) saturate(115%);
+            -webkit-backdrop-filter: blur(7px) saturate(115%);
+            padding: 12px 16px 0 16px;
+            box-sizing: border-box;
+        }
+
+        /* 上部ヘッダー領域も透過させ、背後の文章を確認できるようにする */
+        .search-label,
+        .fkey-row,
+        .search-section { background: transparent !important; }
+
+        /* メインコンテンツラッパー: 左=検索+キーボード、右=パネルを画面上部まで伸ばす */
+        .main-content-wrapper {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            grid-template-rows: 1fr;
+            flex: 1 1 0;
+            min-height: 0;
+            min-width: 0;
+            width: 100%;
+            max-width: 100%;
+        }
+
+        /* 左列: 検索＋エラー＋キーボードを縦に積み、コンパクトに */
+        .left-column {
+            grid-column: 1;
+            grid-row: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            min-height: 0;
+            gap: 6px;
+        }
+
+        .search-section {
+            flex-shrink: 0;
+            width: 100%;
+            margin-bottom: 0;
+        }
+
+
+        .search-label {
+            font-size: 12px;
+            color: #858585;
+            margin-bottom: 3px;
+        }
+
+        .search-bar {
+            position: relative;
+        }
+
+        .search-bar[data-mode="nav"] .search-input {
+            border-left: 3px solid #007acc;
+        }
+
+        .search-bar[data-mode="edit"] .search-input {
+            border-left: 3px solid #4ec9b0;
+        }
+
+        .search-mode-badge {
+            font-size: 13px;
+            padding: 2px 7px;
+            border-radius: 5px;
+            margin-left: 10px;
+        }
+
+        /* WCAG 2.1 AA 通常テキスト 4.5:1 以上で視認性を確保 */
+        .search-mode-badge[data-mode="nav"] {
+            background: #0e639c;
+            color: #ffffff;
+        }
+
+        .search-mode-badge[data-mode="edit"] {
+            background: #1e5631;
+            color: #ffffff;
+        }
+
+        .search-input {
+            width: 100%;
+            min-height: 36px;
+            max-height: 40px;
+            padding: 6px 12px;
+            background: #3c3c3c;
+            border: 1px solid #3c3c3c;
+            border-radius: 4px;
+            color: #cccccc;
+            font-size: 14px;
+            line-height: 1.4;
+            outline: none;
+        }
+
+        .search-input:focus {
+            border-color: #007acc;
+            background: #404040;
+            box-shadow: 0 0 0 2px rgba(0, 122, 204, 0.4);
+        }
+
+        .help-hint-btn {
+            padding: 4px 10px;
+            font-size: 12px;
+            background: #3c3c3c;
+            border: 1px solid #555;
+            border-radius: 4px;
+            color: #cccccc;
+            cursor: pointer;
+        }
+        .help-hint-btn:hover {
+            background: #4a4a4a;
+            border-color: #007acc;
+        }
+
+        /* F1〜F6 ショートカットボタン行（表示サイズ 1.2倍） */
+        .fkey-row {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 7px;
+            flex-wrap: wrap;
+        }
+        /* WCAG 2.1 AA 通常テキスト 4.5:1 以上で視認性を確保 */
+        .fkey-btn {
+            padding: 5px 10px;
+            font-size: 13px;
+            min-width: 43px;
+            background: #3c3c3c;
+            border: 1px solid #555;
+            border-radius: 5px;
+            color: #e0e0e0;
+            cursor: pointer;
+        }
+        .fkey-btn:hover {
+            background: #4a4a4a;
+            border-color: #555;
+        }
+        .fkey-btn-help {
+            background: #0e639c;
+            border-color: #1177bb;
+            color: #ffffff;
+        }
+        .fkey-btn-help:hover {
+            background: #1177bb;
+            border-color: #1177bb;
+        }
+        .fkey-btn-setting {
+            background: #5a3d7a;
+            border-color: #6a4d8a;
+            color: #ffffff;
+        }
+        .fkey-btn-setting:hover {
+            background: #6a4d8a;
+            border-color: #6a4d8a;
+        }
+        .fkey-btn-mode {
+            background: #404055;
+            border-color: #505065;
+            color: #e8e8e8;
+        }
+        .fkey-btn-mode:hover {
+            background: #505065;
+            border-color: #505065;
+        }
+        .fkey-btn-placeholder {
+            color: #c0c0c0;
+            cursor: default;
+        }
+        .fkey-btn-placeholder:hover {
+            background: #3c3c3c;
+            border-color: #555;
+        }
+        .fkey-btn-export {
+            background: #2d6a4a;
+            border-color: #3d7a5a;
+            color: #ffffff;
+        }
+        .fkey-btn-export:hover {
+            background: #3d7a5a;
+            border-color: #3d7a5a;
+        }
+        .fkey-btn-import {
+            background: #a65c2e;
+            border-color: #b86c3e;
+            color: #ffffff;
+        }
+        .fkey-btn-import:hover {
+            background: #b86c3e;
+            border-color: #b86c3e;
+        }
+        /* ファイル選択 input: display:none だとプログラム的 click() でダイアログが開かない環境があるため、視覚のみ隠す */
+        .visually-hidden-file-input {
+            position: absolute;
+            left: -9999px;
+            top: 0;
+            width: 0.1px;
+            height: 0.1px;
+            opacity: 0;
+            overflow: hidden;
+        }
+        .fkey-row-label {
+            font-size: 13px;
+            color: #858585;
+            margin-right: 2px;
+        }
+        .fkey-shortcut-select {
+            padding: 2px 7px;
+            font-size: 13px;
+            min-width: 58px;
+            background: #3c3c3c;
+            border: 1px solid #555;
+            border-radius: 5px;
+            color: #cccccc;
+            margin-right: 5px;
+        }
+        .fkey-shortcut-select:focus {
+            outline: none;
+            border-color: #007acc;
+        }
+
+        /* キーボードレイアウト（左列内・残り高さを占有） */
+        .keyboard-section {
+            flex: 1 1 0;
+            min-height: 0;
+            min-width: 0;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 統合パネル（右列・画面上部まで伸ばす・data-modeでNav/Edit切り替え） */
+        .autocomplete-panel {
+            grid-column: 2;
+            grid-row: 1;
+            min-width: 0;
+            min-height: 0;
+            align-self: stretch;
+            border: none;
+            border-radius: 0 8px 8px 0;
+            border-left: none;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            padding: 14px;
+            box-sizing: border-box;
+        }
+
+        .autocomplete-panel-title {
+            display: none; /* タイトルバー（〇層目の〇 — Nav: 名前）を非表示 */
+            font-size: 12px;
+            color: #858585;
+            padding: 8px 12px;
+            border-bottom: 1px solid #3c3c3c;
+        }
+
+        .autocomplete-dropdown {
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow-y: auto;
+            display: none;
+            background: #2d2d30;
+        }
+
+        .autocomplete-dropdown.show {
+            display: block;
+        }
+
+        .autocomplete-item {
+            padding: 8px 16px;
+            cursor: pointer;
+            border-bottom: 1px solid #3c3c3c;
+        }
+
+        .autocomplete-item:hover,
+        .autocomplete-item.selected {
+            background: #094771;
+        }
+
+        .autocomplete-item:last-child {
+            border-bottom: none;
+        }
+
+        .autocomplete-item.predicted-item {
+            background: #2d4a2d;
+            border-left: 3px solid #4caf50;
+        }
+
+        .autocomplete-item.predicted-item:hover,
+        .autocomplete-item.predicted-item.selected {
+            background: #3d5a3d;
+        }
+
+        .autocomplete-item.disabled-item {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: #2d2d2d;
+        }
+
+        .autocomplete-item.disabled-item:hover {
+            background: #2d2d2d;
+        }
+
+        .predicted-label {
+            font-size: 11px;
+            color: #4caf50;
+            margin-left: 8px;
+            opacity: 0.8;
+        }
+
+        /* keyboard-section の flex は上で定義済み */
+
+        .keyboard-title {
+            font-size: 14px;
+            color: #cccccc;
+            margin-bottom: 6px;
+        }
+
+        /* キーボード幅を keyFeedback(637px) に合わせる。内側 629px、10キー+9gap → 1キー 61.1px */
+        .keyboard {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            align-items: center;
+            align-self: flex-start;
+            width: 637px;
+            box-sizing: border-box;
+            background: #2d2d30;
+            padding: 12px 4px 8px 4px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+
+        .keyboard-row {
+            display: flex;
+            gap: 2px;
+            justify-content: center;
+            width: fit-content;
+        }
+
+        .keyboard-row.row2 {
+            padding-left: 15px;
+        }
+
+        .keyboard-row.row3 {
+            padding-left: 27px;
+        }
+
+        .keyboard-row.row0 {
+            margin-bottom: 5px;
+        }
+
+        .key {
+            position: relative;
+            width: 61.1px;
+            height: 61.1px;
+            flex-shrink: 0;
+            background: #3c3c3c;
+            border: 1px solid #555;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 500;
+            color: #cccccc;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .key > span:first-child {
+            position: relative;
+            z-index: 5;
+        }
+
+        .key:hover {
+            background: #4a4a4a;
+            border-color: #666;
+        }
+
+        .key.bound {
+            background: #0e639c;
+            border-color: #007acc;
+            color: #ffffff;
+        }
+
+        .key.bound:hover {
+            background: #1177bb;
+        }
+
+        .key.unbound {
+            background: #2d2d30;
+            border-color: #3c3c3c;
+            color: #858585;
+            pointer-events: none;
+        }
+
+        .key-label {
+            position: absolute;
+            top: -18px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 11px;
+            z-index: 5;
+            color: #4ec9b0;
+            white-space: nowrap;
+            background: #1e1e1e;
+            padding: 1px 4px;
+            border-radius: 3px;
+            pointer-events: none;
+        }
+
+        .key.unbound .key-label {
+            color: #858585;
+        }
+
+        /* 未割り当てキー押下時の一瞬の赤フィードバック */
+        .key.key-error {
+            background: #c0392b !important;
+            border-color: #e74c3c;
+            box-shadow: 0 0 8px rgba(231, 76, 60, 0.6);
+            transition: background 0.1s, border-color 0.1s, box-shadow 0.1s;
+        }
+
+        /* 貼り付け先に選んだキー */
+        .key.paste-target {
+            outline: 2px solid #4ec9b0;
+            outline-offset: 2px;
+            box-shadow: 0 0 0 4px rgba(78, 201, 176, 0.3);
+        }
+
+        /* 点はキー文字の背後に配置（z-index を文字より低く） */
+        .key-indicator {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .key-indicator::before {
+            content: '●';
+            display: block;
+        }
+
+        .key-indicator.empty {
+            display: none;
+        }
+
+        /* 第1段階: 大きさのみ（1-200→small, 201-400→medium, 401-600→large, 601-800→xlarge） */
+        .key-indicator.small {
+            font-size: 6px;
+            color: #6a9fb5;
+        }
+
+        .key-indicator.medium {
+            font-size: 10px;
+            color: #6a9fb5;
+        }
+
+        .key-indicator.large {
+            font-size: 14px;
+            color: #6a9fb5;
+        }
+
+        .key-indicator.xlarge {
+            font-size: 18px;
+            color: #6a9fb5;
+        }
+
+        /* 第2段階: 最大サイズのまま、200刻みで色が変わる（801-1000, 1001-1200, …） */
+        .key-indicator.xlarge.color-1 { color: #6a9fb5; }
+        .key-indicator.xlarge.color-2 { color: #5eb3f0; }
+        .key-indicator.xlarge.color-3 { color: #4ec9b0; }
+        .key-indicator.xlarge.color-4 { color: #dcdcaa; }
+        .key-indicator.xlarge.color-5 { color: #ce9178; }
+        .key-indicator.xlarge.color-6 { color: #ffa500; }
+        .key-indicator.xlarge.color-7 { color: #f14c4c; }
+        .key-indicator.xlarge.color-8 { color: #ff4444; }
+        .key-indicator.xlarge.color-9 { color: #ff0000; }
+
+        /* パネル内: 編集時=候補表示・ナビブロック非表示 / ナビ時=ナビブロック表示・候補非表示 */
+        .autocomplete-panel[data-mode="edit"] .autocomplete-dropdown { display: block; }
+        .autocomplete-panel[data-mode="nav"] .autocomplete-dropdown { display: none !important; }
+        .autocomplete-panel[data-mode="nav"] .panel-content-nav { display: flex; flex: 1 1 0; min-height: 0; overflow: auto; }
+        .autocomplete-panel[data-mode="edit"] .panel-content-nav { display: none !important; }
+
+        /* 文字列設定ブロック：常にパネル幅いっぱい・画面下まで伸ばす（文字列の有無に依存しない） */
+        .panel-content-nav {
+            border: none;
+            border-left: none;
+            background: #383838;
+            border-radius: 6px;
+            cursor: pointer;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            flex: 1 1 0;
+            min-height: 0;
+            width: 100%;
+            height: 100%;
+            box-shadow: none;
+            padding-bottom: 10px;
+            box-sizing: border-box;
+        }
+        /* 選択時（フォーカス）の外枠をまわりの背景色と同じにして目立たなくする（outline + box-shadow の両方を上書き） */
+        .panel-content-nav:focus,
+        .panel-content-nav:focus-visible {
+            outline: 2px solid #2d2d30 !important;
+            outline-offset: 0 !important;
+            box-shadow: none !important;
+        }
+        .panel-content-nav:focus:hover,
+        .panel-content-nav:focus-visible:hover {
+            outline-color: #2d2d30 !important;
+            box-shadow: none !important;
+        }
+        .panel-content-nav.copy-feedback:focus,
+        .panel-content-nav.copy-feedback:focus:hover,
+        .panel-content-nav.copy-feedback:focus-visible {
+            outline-color: #0e639c !important;
+        }
+        .panel-content-nav.copy-feedback-error:focus,
+        .panel-content-nav.copy-feedback-error:focus:hover,
+        .panel-content-nav.copy-feedback-error:focus-visible {
+            outline-color: #5a1e1e !important;
+        }
+
+        .panel-nav-label {
+            font-size: 16px;
+            line-height: 1.5;
+            padding: 10px 14px;
+            color: #e0e0e0;
+            border-bottom: 1px solid #555;
+            background: linear-gradient(180deg, #404040 0%, #353535 100%);
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            flex-shrink: 0;
+        }
+
+        .panel-content-string {
+            font-size: 12px;
+            line-height: 1.5;
+            padding: 10px 12px 14px 12px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            word-break: break-all;
+            color: #e0e0e0;
+            overflow-y: auto;
+            flex: 1 1 auto;
+            min-height: 0;
+        }
+
+        .panel-content-nav:hover {
+            background: #3d3d3d;
+            border-color: #3d3d3d;
+            border-left-color: #3d3d3d;
+        }
+
+        .panel-content-nav:hover .panel-nav-label {
+            background: linear-gradient(180deg, #454545 0%, #3a3a3a 100%);
+            color: #f0f0f0;
+        }
+
+        .panel-content-nav.copy-feedback {
+            background: #0e639c !important;
+            border-color: #0e639c;
+            border-left-color: #0e639c;
+            transition: background-color 0.15s, border-color 0.15s;
+        }
+
+        .panel-content-nav.copy-feedback .panel-nav-label {
+            background: #0d5a8f;
+            color: #fff;
+        }
+
+        .panel-content-nav.copy-feedback-error {
+            background: #5a1e1e !important;
+            border-color: #5a1e1e;
+            border-left-color: #5a1e1e;
+            transition: background-color 0.15s, border-color 0.15s;
+        }
+
+        .panel-content-nav.copy-feedback-error .panel-nav-label {
+            background: #4a1818;
+            color: #f5c6c6;
+        }
+
+        /* 右パネル：表示エリアのキャプション（編集はモーダルで行う旨） */
+        .panel-view-caption {
+            font-size: 11px;
+            color: #888;
+            margin-bottom: 6px;
+            flex-shrink: 0;
+        }
+        .panel-edit-row {
+            margin-top: 14px;
+            flex-shrink: 0;
+        }
+        .panel-edit-btn {
+            padding: 6px 14px;
+            font-size: 13px;
+            background: #0e639c;
+            color: #fff;
+            border: 1px solid #1a7bc4;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .panel-edit-btn:hover {
+            background: #1a7bc4;
+            border-color: #2a8bd4;
+        }
+        /* 編集ボタンは非表示（編集はモーダル・ダブルクリック・キーで行う） */
+        .panel-edit-row { display: none !important; }
+        .autocomplete-panel[data-mode="edit"] .panel-view-caption,
+        .autocomplete-panel[data-mode="edit"] .panel-edit-row { display: none !important; }
+
+        /* キー未割り当てエラー表示 */
+        #keyFeedback {
+            font-size: 12px;
+            color: #f48771;
+            margin-top: 8px;
+            min-height: 20px;
+        }
+        #keyFeedback.show {
+            padding: 6px 10px;
+            background: #5a1e1e;
+            border-radius: 4px;
+        }
+        #breadcrumbNav {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            padding: 6px 10px;
+            background: #2d2d2d;
+            border-radius: 4px;
+            margin-top: 6px;
+            min-height: 20px;
+        }
+        #breadcrumbNav .breadcrumb-item {
+            color: #007acc;
+            text-decoration: none;
+            margin-right: 5px;
+            cursor: pointer;
+        }
+        #breadcrumbNav .breadcrumb-item:hover {
+            text-decoration: underline;
+        }
+        #breadcrumbNav .breadcrumb-separator {
+            color: #858585;
+            margin-right: 5px;
+        }
+        #breadcrumbNav .breadcrumb-current {
+            color: #cccccc;
+            font-weight: 600;
+            margin-right: 5px;
+        }
+
+        /* キーバインド設定ダイアログ（全画面・ヘッダーにタイトルとボタン） */
+        .bind-dialog {
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            background: #252526;
+            border: none;
+            z-index: 1000;
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .bind-dialog.show {
+            display: flex;
+        }
+
+        .bind-dialog-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+            padding: 16px 24px;
+            border-bottom: 1px solid #3c3c3c;
+            gap: 16px;
+        }
+
+        .bind-dialog-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #cccccc;
+            margin: 0;
+            flex-shrink: 0;
+        }
+
+        .bind-dialog-header .bind-dialog-buttons {
+            margin: 0;
+        }
+
+        .bind-dialog-body {
+            flex: 1 1 0;
+            min-height: 0;
+            overflow-y: auto;
+            padding: 24px 32px 32px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .bind-dialog-label {
+            font-size: 15px;
+            color: #858585;
+            margin-bottom: 16px;
+        }
+
+        .bind-dialog-section {
+            margin-bottom: 22px;
+            flex-shrink: 0;
+        }
+
+        /* 設定文字列セクション：残りスペースいっぱいに伸ばす */
+        .bind-dialog-section:has(.bind-dialog-textarea) {
+            flex: 1 1 0;
+            min-height: 0;
+            margin-bottom: 22px;
+            display: flex;
+            flex-direction: column;
+            overflow: auto;
+        }
+
+        .bind-dialog-section:has(.bind-dialog-textarea) .bind-dialog-section-title,
+        .bind-dialog-section:has(.bind-dialog-textarea) .bind-dialog-section-desc {
+            flex-shrink: 0;
+        }
+
+        .bind-dialog-section-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #cccccc;
+            margin-bottom: 6px;
+        }
+
+        .bind-dialog-section-desc {
+            font-size: 13px;
+            color: #858585;
+            margin-bottom: 10px;
+            line-height: 1.45;
+        }
+
+        .bind-dialog-input,
+        .bind-dialog-textarea {
+            width: 100%;
+            padding: 10px 14px;
+            background: #3c3c3c;
+            border: 1px solid #3c3c3c;
+            border-radius: 4px;
+            color: #cccccc;
+            font-size: 15px;
+            font-family: inherit;
+            outline: none;
+        }
+
+        .bind-dialog-input:focus,
+        .bind-dialog-textarea:focus {
+            border-color: #007acc;
+            background: #404040;
+        }
+
+        .bind-dialog-textarea {
+            flex: 1 1 0;
+            min-height: 280px;
+            resize: vertical;
+            font-family: 'Consolas', 'Monaco', monospace;
+            line-height: 1.5;
+        }
+
+        .bind-dialog-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            flex-shrink: 0;
+        }
+
+        .bind-dialog-button {
+            padding: 10px 18px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 15px;
+        }
+
+        .bind-dialog-button.primary {
+            background: #007acc;
+            color: #ffffff;
+        }
+
+        .bind-dialog-button.primary:hover {
+            background: #1177bb;
+        }
+
+        .bind-dialog-button.secondary {
+            background: #3c3c3c;
+            color: #cccccc;
+        }
+
+        .bind-dialog-button.secondary:hover {
+            background: #4a4a4a;
+        }
+
+        .loading {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        /* ヘルプモーダル（F1で表示、Escape/閉じる/オーバーレイクリックで閉じる） */
+        .help-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 998;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+        .help-modal-overlay.show {
+            display: flex;
+        }
+        .help-modal {
+            background: #252526;
+            border: 1px solid #3c3c3c;
+            border-radius: 8px;
+            padding: 32px 40px;
+            width: min(92vw, 900px);
+            max-width: 900px;
+            max-height: 88vh;
+            overflow-y: auto;
+            z-index: 999;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+        }
+        .help-modal .help-modal-title {
+            font-size: 22px;
+            font-weight: 600;
+            color: #cccccc;
+            margin-bottom: 24px;
+        }
+        .help-modal .help-modal-body {
+            font-size: 14px;
+            color: #cccccc;
+            line-height: 1.75;
+        }
+        .help-modal .help-modal-body kbd {
+            display: inline-block;
+            padding: 2px 6px;
+            background: #3c3c3c;
+            border-radius: 3px;
+            font-family: monospace;
+            margin-right: 4px;
+        }
+        .help-modal .help-modal-body > div {
+            margin-bottom: 10px;
+        }
+        .help-modal .help-section {
+            margin-top: 22px;
+            margin-bottom: 14px;
+            font-size: 15px;
+            font-weight: 600;
+            color: #4ec9b0;
+        }
+        .help-modal .help-section:first-of-type {
+            margin-top: 0;
+        }
+        .help-modal-close {
+            margin-top: 20px;
+            padding: 8px 20px;
+            background: #007acc;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .help-modal-close:hover {
+            background: #1177bb;
+        }
+
+        /* テンキー設定モーダル（F4で表示） */
+        .tenkey-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 998;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+        .tenkey-modal-overlay.show {
+            display: flex;
+        }
+        .tenkey-modal {
+            background: #252526;
+            border: 1px solid #3c3c3c;
+            border-radius: 8px;
+            padding: 24px;
+            max-width: min(92vw, 420px);
+            max-height: 90vh;
+            overflow-y: auto;
+            z-index: 999;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+        }
+        .tenkey-modal .tenkey-modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #cccccc;
+            margin-bottom: 16px;
+        }
+        .tenkey-modal-choices {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .tenkey-modal-choices button {
+            flex: 1 1 auto;
+            min-width: 80px;
+            padding: 12px 16px;
+            font-size: 14px;
+            background: #3c3c3c;
+            border: 1px solid #555;
+            border-radius: 4px;
+            color: #cccccc;
+            cursor: pointer;
+        }
+        .tenkey-modal-choices button:hover {
+            background: #4a4a4a;
+            border-color: #666;
+        }
+        .tenkey-modal-choices button.active {
+            background: #0e639c;
+            border-color: #007acc;
+            color: #fff;
+        }
+        .tenkey-modal-close {
+            display: block;
+            margin-top: 8px;
+            padding: 8px 20px;
+            background: #007acc;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .tenkey-modal-close:hover {
+            background: #1177bb;
+        }
+
+        /* 設定モーダル（F5で表示） */
+        .setting-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 998;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+        .setting-modal-overlay.show {
+            display: flex;
+        }
+        .setting-modal {
+            background: #252526;
+            border: 1px solid #3c3c3c;
+            border-radius: 8px;
+            padding: 24px;
+            max-width: 360px;
+            z-index: 999;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+        }
+        .setting-modal .setting-modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #cccccc;
+            margin-bottom: 16px;
+        }
+        .setting-modal-body {
+            color: #9d9d9d;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+        .setting-modal-body .setting-row {
+            margin-bottom: 12px;
+        }
+        .setting-modal-body .setting-row label {
+            display: block;
+            margin-bottom: 4px;
+            color: #cccccc;
+        }
+        .setting-modal-body .setting-row select {
+            width: 100%;
+            padding: 6px 8px;
+            background: #3c3c3c;
+            color: #cccccc;
+            border: 1px solid #555;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .setting-modal-close {
+            display: block;
+            margin-top: 8px;
+            padding: 8px 20px;
+            background: #007acc;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .setting-modal-close:hover {
+            background: #1177bb;
+        }
+
+        /* モードモーダル（F6で表示） */
+        .mode-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 998;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+        .mode-modal-overlay.show {
+            display: flex;
+        }
+        .mode-modal {
+            background: #252526;
+            border: 1px solid #3c3c3c;
+            border-radius: 8px;
+            padding: 24px;
+            max-width: 360px;
+            z-index: 999;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+        }
+        .mode-modal .mode-modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #cccccc;
+            margin-bottom: 16px;
+        }
+        .mode-modal-body {
+            color: #9d9d9d;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+        .mode-choice { display: flex; gap: 10px; align-items: flex-start; padding: 10px; margin: 8px 0; border: 1px solid #3c3c3c; border-radius: 6px; cursor: pointer; }
+        .mode-choice:has(input:checked) { border-color: #007acc; background: rgba(0, 122, 204, 0.16); }
+        .mode-choice input { margin-top: 4px; }
+        .mode-choice strong { display: block; color: #ddd; }
+        .mode-choice small { color: #999; }
+        .mode-modal-close {
+            display: block;
+            margin-top: 8px;
+            padding: 8px 20px;
+            background: #007acc;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .mode-modal-close:hover {
+            background: #1177bb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- ラッパー: 幅を検索行に合わせ、右パネルをMode(F6)右端に揃える -->
+        <div class="main-content-wrapper">
+            <div class="left-column">
+            <!-- 検索行: ラッパー幅の基準（Mode(F6)右端まで） -->
+            <div class="search-section">
+                <div class="search-label" style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                    <span id="searchModeBadge" class="search-mode-badge" data-mode="nav" aria-live="polite">Nav</span>
+                    <div class="fkey-row" role="group" aria-label="Fキーショートカット">
+                        <button type="button" id="keybindHelpHint" class="fkey-btn fkey-btn-help" data-f="1" tabindex="0" aria-label="Show help (F1)" title="Help (F1)">Help (F1)</button>
+                        <button type="button" class="fkey-btn fkey-btn-export" data-f="2" tabindex="0" aria-label="Export (F2)" title="Export (F2)">Export (F2)</button>
+                        <label for="importFileInput" class="fkey-btn fkey-btn-import" data-f="3" tabindex="0" aria-label="Import (F3)" title="Import (F3)" role="button">Import (F3)</label>
+                        <button type="button" class="fkey-btn fkey-btn-tenkey" data-f="4" tabindex="0" aria-label="Keyboard (F4)" title="Keyboard (F4)">F4 Keyboard(F4)</button>
+                        <button type="button" class="fkey-btn fkey-btn-setting" data-f="5" tabindex="0" aria-label="Setting (F5)" title="Setting (F5)">Setting (F5)</button>
+                        <button type="button" class="fkey-btn fkey-btn-mode" data-f="6" tabindex="0" aria-label="Mode (F6) モード選択" title="Mode (F6) モード選択">Mode (F6)</button>
+                    </div>
+                    <!-- ファイル選択は display:none だと一部環境でダイアログが開かないため、視覚的に隠す -->
+                    <input type="file" id="importFileInput" accept=".json" class="visually-hidden-file-input" aria-hidden="true" tabindex="-1">
+                </div>
+                <div class="search-bar" data-mode="nav">
+                    <input type="text" class="search-input" placeholder="Search..." id="searchInput">
+                </div>
+                <div id="keyFeedback" aria-live="polite"></div>
+                <div id="breadcrumbNav" style="display: none;" aria-label="階層パンくず"></div>
+            </div>
+            <div class="keyboard-section" id="keyboardSection" data-mode="qwerty">
+                <div class="keyboard" id="keyboardContainer"></div>
+            </div>
+            </div>
+            <div class="autocomplete-panel" id="autocompletePanel">
+                <div class="panel-content-nav" id="panelContentNav" tabindex="0" role="button" aria-label="設定文字列をクリップボードにコピー">
+                    <div class="panel-nav-label" id="panelNavLabel">Nav:</div>
+                    <div class="panel-content-string" id="panelContentString"></div>
+                </div>
+                <div class="autocomplete-panel-title" id="autocomplete-panel-title">キーバインド候補</div>
+                <div class="autocomplete-dropdown" id="autocomplete"></div>
+            </div>
+        </div>
+
+        <!-- ヘルプモーダル（F1で開く・Escape/閉じる/オーバーレイクリックで閉じる） -->
+        <div class="help-modal-overlay" id="helpModalOverlay" aria-hidden="true">
+            <div class="help-modal" id="helpModal" role="dialog" aria-labelledby="helpModalTitle" aria-modal="true">
+                <div class="help-modal-title" id="helpModalTitle">キーボードショートカット（英数字キーはマップ用のため、以下で操作）</div>
+                <div class="help-modal-body">
+                    <div class="keybind-help-layer-desc" style="margin-bottom:14px; padding:10px; background:#2d2d30; border-radius:4px;">
+                        <strong>1層目（カテゴリ）</strong> — キーに割り当てる大分類（例: 言語・ツール・定型文）。最上位で表示されるキーが1層目。<br>
+                        <strong>2層目（項目）</strong> — カテゴリ内の個別項目。ここに「設定文字列」を割り当て、Enterで返す内容を設定する。
+                    </div>
+
+                    <div class="help-section">Fキー</div>
+                    <div id="helpLineShortcut"><kbd>F1</kbd> ヘルプの表示/非表示</div>
+                    <div><kbd>F2</kbd> エクスポート（JSON）</div>
+                    <div><kbd>F3</kbd> インポート（JSON）</div>
+                    <div><kbd>F4</kbd> キーボード配列の切り替え</div>
+                    <div><kbd>F5</kbd> 設定</div>
+                    <div><kbd>F6</kbd> コピー／貼り付け動作モードを選択</div>
+
+                    <div class="help-section">検索・補完</div>
+                    <div><kbd>Ctrl</kbd>+<kbd>K</kbd> 検索にフォーカス</div>
+                    <div><kbd>Tab</kbd>/<kbd>Shift+Tab</kbd> または <kbd>↑</kbd><kbd>↓</kbd> 補完候補の選択 / <kbd>Enter</kbd> 確定 / <kbd>Escape</kbd> 補完を閉じる</div>
+
+                    <div class="help-section">ナビゲーション</div>
+                    <div><kbd>Backspace</kbd> / <kbd>Alt</kbd>+<kbd>←</kbd> 一つ上の階層へ戻る</div>
+                    <div>英数字キー（マップキー）で階層を移動（キーボード上のキーに対応）</div>
+
+                    <div class="help-section">キーバインド（貼り付け・設定）</div>
+                    <div id="helpLineAltKey"><kbd>Alt</kbd>+<kbd>英数字キー</kbd> 貼り付け先キーを選択（キーボード上でハイライト）→ 検索で項目を選び <kbd>Enter</kbd> でそのキーに文字列を貼り付け</div>
+                    <div id="helpLineCtrlAltKey"><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>英数字キー</kbd> そのキーの設定ダイアログを開く</div>
+                    <div>未設定キーは「<kbd>Ctrl</kbd>+<kbd>Enter</kbd>」で設定ダイアログを開く（キーボード上のキーをクリックでも可）</div>
+
+                    <div class="help-section">コピー（設定文字列を使う）</div>
+                    <div><kbd>Ctrl</kbd>+<kbd>C</kbd> 現在の設定文字列をクリップボードにコピー</div>
+                    <div>設定文字列欄をクリック / <kbd>Enter</kbd> / <kbd>Space</kbd> でもクリップボードにコピー</div>
+
+                    <div class="help-section">編集（現在の階層）</div>
+                    <div><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>N</kbd> 現在の階層を編集（ダイアログを開きナビラベル欄にフォーカス）</div>
+                    <div><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>C</kbd> 現在の階層を編集（ダイアログを開き設定文字列欄にフォーカス）</div>
+                    <div><kbd>Ctrl</kbd>+<kbd>Enter</kbd> 現在の階層のラベル・内容を編集（ダイアログを開く）</div>
+                    <div>設定文字列欄をダブルクリックでも編集ダイアログを開く</div>
+
+                    <div class="help-section">ダイアログ内</div>
+                    <div><kbd>Ctrl</kbd>+<kbd>S</kbd> / <kbd>Ctrl</kbd>+<kbd>Enter</kbd> 設定を保存</div>
+                    <div><kbd>Escape</kbd> ダイアログ・補完・ヘルプ・キーボード設定・設定モーダルを閉じる</div>
+
+                    <div class="help-section">キーボード設定モーダル（F4表示中）</div>
+                    <div><kbd>←</kbd><kbd>↑</kbd> 前の配列 / <kbd>→</kbd><kbd>↓</kbd> 次の配列 / <kbd>Enter</kbd> 確定して閉じる</div>
+                </div>
+                <button type="button" class="help-modal-close" id="helpModalClose">閉じる</button>
+            </div>
+        </div>
+
+        <!-- テンキー設定モーダル（F4で表示・QWERTY/Numpadの選択） -->
+        <div class="tenkey-modal-overlay" id="tenkeyModalOverlay" aria-hidden="true">
+            <div class="tenkey-modal" id="tenkeyModal" role="dialog" aria-labelledby="tenkeyModalTitle" aria-modal="true">
+                <div class="tenkey-modal-title" id="tenkeyModalTitle">キーボード設定</div>
+                <div class="tenkey-modal-choices" id="tenkeyModalChoices"></div>
+                <button type="button" class="tenkey-modal-close" id="tenkeyModalClose">閉じる</button>
+            </div>
+        </div>
+
+        <!-- 設定モーダル（F5で表示） -->
+        <div class="setting-modal-overlay" id="settingModalOverlay" aria-hidden="true">
+            <div class="setting-modal" id="settingModal" role="dialog" aria-labelledby="settingModalTitle" aria-modal="true">
+                <div class="setting-modal-title" id="settingModalTitle">設定</div>
+                <div class="setting-modal-body">
+                    <div class="setting-row">
+                        <label for="settingLanguage">言語</label>
+                        <select id="settingLanguage" aria-label="言語を選択">
+                            <option value="ja">日本語</option>
+                            <option value="en">English</option>
+                        </select>
+                    </div>
+                </div>
+                <button type="button" class="setting-modal-close" id="settingModalClose">閉じる</button>
+            </div>
+        </div>
+
+        <!-- モードモーダル（F6で表示） -->
+        <div class="mode-modal-overlay" id="modeModalOverlay" aria-hidden="true">
+            <div class="mode-modal" id="modeModal" role="dialog" aria-labelledby="modeModalTitle" aria-modal="true">
+                <div class="mode-modal-title" id="modeModalTitle">モード</div>
+                <div class="mode-modal-body">
+                    <label class="mode-choice"><input type="radio" name="pasteMode" value="copy"><span><strong>コピーのみ</strong><small>設定文字列をクリップボードへコピーします。</small></span></label>
+                    <label class="mode-choice"><input type="radio" name="pasteMode" value="copy-paste"><span><strong>元のカーソル位置へ貼り付け</strong><small>コピー後、呼び出し前のアプリへ戻って自動貼り付けします。</small></span></label>
+                </div>
+                <button type="button" class="mode-modal-close" id="modeModalClose">閉じる</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- キーバインド設定ダイアログ（全画面・ヘッダーにタイトルとボタン） -->
+    <div class="bind-dialog" id="bindDialog">
+        <div class="bind-dialog-header">
+            <div class="bind-dialog-title">キーバインド設定</div>
+            <div class="bind-dialog-buttons">
+                <button class="bind-dialog-button secondary" onclick="closeBindDialog()">キャンセル</button>
+                <button class="bind-dialog-button primary" onclick="saveBind()">設定</button>
+            </div>
+        </div>
+        <div class="bind-dialog-body">
+            <div class="bind-dialog-desc" style="margin-bottom:14px; font-size:14px; color:#b0b0b0; line-height:1.45;">この階層のナビ表示名と設定文字列を、このダイアログで編集・設定します。</div>
+            <div class="bind-dialog-section">
+                <div class="bind-dialog-section-title">1. ナビゲーション用単語</div>
+                <div class="bind-dialog-section-desc">キーボード上に表示され、検索で使用される短い単語</div>
+                <input type="text" class="bind-dialog-input" id="bindNavLabelInput" placeholder="例: Rust, debug, deploy">
+            </div>
+            
+            <div class="bind-dialog-section">
+                <div class="bind-dialog-section-title">2. 設定文字列（長さ制限なし）</div>
+                <div class="bind-dialog-section-desc">この階層で返される実際の文字列（スキル、定型文など）</div>
+                <textarea class="bind-dialog-textarea" id="bindContentInput" placeholder="例: Rust: 再現→切り分け&#10;fn main() {&#10;    // デバッグコード&#10;}"></textarea>
+            </div>
+        </div>
+    </div>
+
+    <script src="local-store.js"></script>
+    <script>
+        // Tauri版のローカルデータストア。Web版のHTTP API互換層として動作し、
+        // Node.jsサーバーなしで保存・検索・インポート・エクスポートを行う。
+        const localStore = MineparserLocalStore.createLocalStore();
+        // 起動後のAPI呼び出しごとのJSON.parseを避ける。永続化は変更時だけ行う。
+        let localNodesCache;
+        const readLocalNodes = () => (localNodesCache ??= localStore.read());
+        const writeLocalNodes = (nodes) => {
+            localNodesCache = nodes;
+            localStore.write(nodes);
+        };
+        const localNode = localStore.node;
+        const localChildren = localStore.children;
+        const localTree = localStore.tree;
+        const localSearch = localStore.search;
+        const localResponse = (body, status = 200) => ({ ok: status >= 200 && status < 300, status,
+            statusText: status === 404 ? 'Not Found' : 'OK', json: async () => body });
+        const nativeFetch = window.fetch.bind(window);
+        window.fetch = async (url, options = {}) => {
+            if (!String(url).includes('/api/')) return nativeFetch(url, options);
+            const u = new URL(url, window.location.href), path = u.pathname.replace(/^.*\/api/, '') || '/';
+            const method = (options.method || 'GET').toUpperCase();
+            const nodes = readLocalNodes();
+            const body = options.body ? JSON.parse(options.body) : null;
+            if (path === '/tree' && method === 'GET') return localResponse(localTree(nodes));
+            if (path === '/export' && method === 'GET') return localResponse({ schema_version: 1, exported_at: new Date().toISOString(), nodes: Object.entries(nodes).map(([id, n]) => ({ id, parent_id: id ? id.slice(0, -1) : null, nav_label: n.navLabel || '', content: n.content || '', content_length: (n.content || '').length })) });
+            if (path === '/import' && method === 'POST') {
+                const imported = {}; (body.nodes || []).forEach(n => { imported[n.id || ''] = { navLabel: n.navLabel ?? n.nav_label ?? '', content: n.content || '' }; });
+                writeLocalNodes(imported); return localResponse({ success: true });
+            }
+            if (path === '/search' || path === '/search/autocomplete') {
+                const q = (u.searchParams.get('q') || '').toLowerCase();
+                return localResponse(localSearch(nodes, q, path.includes('autocomplete') ? 10 : 100));
+            }
+            if (path === '/nodes/children' && method === 'GET') return localResponse(localChildren(nodes, ''));
+            if (path === '/nodes' && method === 'GET') return nodes[''] ? localResponse(localNode('', nodes[''])) : localResponse({ error: 'Node not found' }, 404);
+            if (path === '/nodes' && method === 'POST') { nodes[''] = { navLabel: body.navLabel || '', content: body.content || '' }; writeLocalNodes(nodes); return localResponse({ success: true }); }
+            const nodeMatch = path.match(/^\/nodes\/([^/]+)$/);
+            const childMatch = path.match(/^\/nodes\/([^/]+)\/children$/);
+            if (childMatch && method === 'GET') return localResponse(localChildren(nodes, decodeURIComponent(childMatch[1])));
+            if (nodeMatch) {
+                const id = decodeURIComponent(nodeMatch[1]);
+                if (method === 'GET') return nodes[id] ? localResponse({ ...localNode(id, nodes[id]), children: Object.fromEntries(localChildren(nodes, id).map(n => [n.id.slice(-1), n.id])) }) : localResponse({ error: 'Node not found' }, 404);
+                if (method === 'POST') { nodes[id] = { navLabel: body.navLabel || '', content: body.content || '' }; writeLocalNodes(nodes); return localResponse({ success: true }); }
+                if (method === 'DELETE') { Object.keys(nodes).filter(k => k === id || k.startsWith(id)).forEach(k => delete nodes[k]); writeLocalNodes(nodes); return localResponse({ success: true }); }
+            }
+            return localResponse({ error: 'Not found' }, 404);
+        };
+        const API_BASE = '/api';
+        let currentPath = ''; // 現在の階層パス（空文字列 = 最上位）
+        let hierarchyTree = {}; // 階層ツリー（キャッシュ）
+        let autocompleteTimeout = null;
+        let searchSyncTimeout = null; // 検索バー→階層UI同期用デバウンス
+        let lastNavigateToPathAt = 0; // 階層移動直後の input で上書きしないガード用
+        let inputMode = 'qwerty'; // レイアウトID（'qwerty' | 'tenkey' | 将来 'dvorak' 等）
+        let pasteMode = localStorage.getItem('mineparser.pasteMode') || 'copy';
+
+        // キーボードレイアウトレジストリ（表示用 keyRows + 物理キー→文字 codeToCharMap）
+        const KEYBOARD_LAYOUTS = [
+            {
+                id: 'qwerty',
+                displayName: 'QWERTY',
+                keyRows: [
+                    ['1','2','3','4','5','6','7','8','9','0'],
+                    ['Q','W','E','R','T','Y','U','I','O','P'],
+                    ['A','S','D','F','G','H','J','K','L'],
+                    ['Z','X','C','V','B','N','M']
+                ],
+                codeToCharMap: {
+                    Digit1:'1', Digit2:'2', Digit3:'3', Digit4:'4', Digit5:'5',
+                    Digit6:'6', Digit7:'7', Digit8:'8', Digit9:'9', Digit0:'0',
+                    KeyQ:'q', KeyW:'w', KeyE:'e', KeyR:'r', KeyT:'t', KeyY:'y', KeyU:'u', KeyI:'i', KeyO:'o', KeyP:'p',
+                    KeyA:'a', KeyS:'s', KeyD:'d', KeyF:'f', KeyG:'g', KeyH:'h', KeyJ:'j', KeyK:'k', KeyL:'l',
+                    KeyZ:'z', KeyX:'x', KeyC:'c', KeyV:'v', KeyB:'b', KeyN:'n', KeyM:'m'
+                }
+            },
+            {
+                id: 'tenkey',
+                displayName: 'Numpad',
+                keyRows: [
+                    ['7','8','9'],
+                    ['4','5','6'],
+                    ['1','2','3'],
+                    ['0']
+                ],
+                codeToCharMap: {
+                    Numpad0:'0', Numpad1:'1', Numpad2:'2', Numpad3:'3', Numpad4:'4',
+                    Numpad5:'5', Numpad6:'6', Numpad7:'7', Numpad8:'8', Numpad9:'9',
+                    Digit0:'0', Digit1:'1', Digit2:'2', Digit3:'3', Digit4:'4',
+                    Digit5:'5', Digit6:'6', Digit7:'7', Digit8:'8', Digit9:'9'
+                }
+            },
+            {
+                id: 'dvorak',
+                displayName: 'Dvorak',
+                keyRows: [
+                    ['1','2','3','4','5','6','7','8','9','0'],
+                    ['P','Y','F','G','C','R','L'],
+                    ['A','O','E','U','I','D','H','T','N','S'],
+                    ['Q','J','K','X','B','M','W','V','Z']
+                ],
+                codeToCharMap: {
+                    Digit1:'1', Digit2:'2', Digit3:'3', Digit4:'4', Digit5:'5',
+                    Digit6:'6', Digit7:'7', Digit8:'8', Digit9:'9', Digit0:'0',
+                    KeyR:'p', KeyT:'y', KeyY:'f', KeyU:'g', KeyI:'c', KeyO:'r', KeyP:'l',
+                    KeyA:'a', KeyS:'o', KeyD:'e', KeyF:'u', KeyG:'i', KeyH:'d', KeyJ:'h', KeyK:'t', KeyL:'n',
+                    KeyX:'q', KeyC:'j', KeyV:'k', KeyB:'x', KeyN:'b', KeyM:'m',
+                    KeyComma:'w', KeyPeriod:'v', KeySlash:'z'
+                }
+            },
+            {
+                id: 'colemak',
+                displayName: 'Colemak',
+                keyRows: [
+                    ['1','2','3','4','5','6','7','8','9','0'],
+                    ['Q','W','F','P','G','J','L','U','Y'],
+                    ['A','R','S','T','D','H','N','E','I','O'],
+                    ['Z','X','C','V','B','K','M']
+                ],
+                codeToCharMap: {
+                    Digit1:'1', Digit2:'2', Digit3:'3', Digit4:'4', Digit5:'5',
+                    Digit6:'6', Digit7:'7', Digit8:'8', Digit9:'9', Digit0:'0',
+                    KeyQ:'q', KeyW:'w', KeyF:'f', KeyP:'p', KeyG:'g', KeyJ:'j', KeyL:'l', KeyU:'u', KeyY:'y',
+                    KeyA:'a', KeyR:'r', KeyS:'s', KeyT:'t', KeyD:'d', KeyH:'h', KeyN:'n', KeyE:'e', KeyI:'i', KeyO:'o',
+                    KeyZ:'z', KeyX:'x', KeyC:'c', KeyV:'v', KeyB:'b', KeyK:'k', KeyM:'m'
+                }
+            },
+            {
+                id: 'jis',
+                displayName: 'JIS',
+                keyRows: [
+                    ['1','2','3','4','5','6','7','8','9','0'],
+                    ['Q','W','E','R','T','Y','U','I','O','P'],
+                    ['A','S','D','F','G','H','J','K','L'],
+                    ['Z','X','C','V','B','N','M']
+                ],
+                codeToCharMap: {
+                    Digit1:'1', Digit2:'2', Digit3:'3', Digit4:'4', Digit5:'5',
+                    Digit6:'6', Digit7:'7', Digit8:'8', Digit9:'9', Digit0:'0',
+                    KeyQ:'q', KeyW:'w', KeyE:'e', KeyR:'r', KeyT:'t', KeyY:'y', KeyU:'u', KeyI:'i', KeyO:'o', KeyP:'p',
+                    KeyA:'a', KeyS:'s', KeyD:'d', KeyF:'f', KeyG:'g', KeyH:'h', KeyJ:'j', KeyK:'k', KeyL:'l',
+                    KeyZ:'z', KeyX:'x', KeyC:'c', KeyV:'v', KeyB:'b', KeyN:'n', KeyM:'m'
+                }
+            }
+        ];
+
+        // 1層目・2層目の設定（表示名と説明）
+        const LAYER_SETTINGS = {
+            1: { name: '1層目', label: 'カテゴリ', desc: 'キーに割り当てる大分類（例: 言語・ツール・定型文）' },
+            2: { name: '2層目', label: '項目',     desc: 'カテゴリ内の個別項目。ここに「設定文字列」を割り当てる' }
+        };
+        function getLayerDepth() {
+            return currentPath.length === 0 ? 1 : (currentPath.length === 1 ? 2 : currentPath.length);
+        }
+        function getLayerLabel() {
+            const d = getLayerDepth();
+            const s = LAYER_SETTINGS[d] || { name: `${d}層目`, label: `階層${d}` };
+            return `${s.name}（${s.label}）`;
+        }
+        function getLayerDepthForPath(path) {
+            return path.length === 0 ? 1 : (path.length === 1 ? 2 : path.length);
+        }
+        function getLayerLabelForPath(path) {
+            const d = getLayerDepthForPath(path);
+            const s = LAYER_SETTINGS[d] || { name: `${d}層目`, label: `階層${d}` };
+            return `${s.name}（${s.label}）`;
+        }
+
+        function escapeHtml(str) {
+            if (str == null || str === '') return '';
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        // API呼び出しヘルパー
+        async function apiCall(endpoint, options = {}) {
+            try {
+                const response = await fetch(`${API_BASE}${endpoint}`, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...options.headers
+                    },
+                    ...options
+                });
+                
+                if (!response.ok) {
+                    // 404エラーの場合は特別に処理
+                    if (response.status === 404) {
+                        const error = new Error(`API Error: ${response.status} ${response.statusText}`);
+                        error.status = 404;
+                        throw error;
+                    }
+                    throw new Error(`API Error: ${response.status} ${response.statusText}`);
+                }
+                
+                return await response.json();
+            } catch (error) {
+                console.error('API呼び出しエラー:', error);
+                throw error;
+            }
+        }
+
+        // 階層ツリーをロード
+        async function loadTree() {
+            try {
+                const treeData = await apiCall('/tree');
+                // ツリーデータを階層ツリーに完全に置き換え（マージではなく）
+                hierarchyTree = treeData;
+                // 各ノードのcontentLengthが設定されていない場合は計算
+                Object.keys(hierarchyTree).forEach(path => {
+                    const node = hierarchyTree[path];
+                    if (node) {
+                        // contentLengthが設定されていない場合は計算
+                        if (node.contentLength === undefined) {
+                            node.contentLength = node.content ? node.content.length : 0;
+                        }
+                        // childrenがオブジェクトでない場合は空オブジェクトに初期化
+                        if (!node.children || typeof node.children !== 'object') {
+                            node.children = {};
+                        }
+                    }
+                });
+                console.log('階層ツリーを読み込みました:', Object.keys(hierarchyTree));
+                renderKeyboardLayout(inputMode);
+                await updateDisplay();
+            } catch (error) {
+                console.error('階層ツリーの読み込みエラー:', error);
+                alert('階層ツリーの読み込みに失敗しました');
+                // API失敗時もキーボードレイアウトは描画する（空のツリーで表示）
+                renderKeyboardLayout(inputMode);
+            }
+        }
+
+        // ノード取得
+        function getNode(path) {
+            return hierarchyTree[path] || { navLabel: '', content: '', contentLength: 0, children: {} };
+        }
+
+        // 入力文字列から「存在する階層まで」の最長パスを返す（キー押下と同じ：無効なキーは進まない）
+        function getLongestValidPath(typed) {
+            if (!typed || typed.trim() === '') return '';
+            let path = '';
+            for (const c of typed.trim()) {
+                const node = getNode(path);
+                const nextPath = node.children && node.children[c];
+                if (nextPath === undefined) break;
+                path = nextPath;
+            }
+            return path;
+        }
+
+        // why: 編集位置のキーを一意に決め、その親パスで兄弟候補を出すため
+        // assumption: pathString は searchInput.value を渡す想定。カーソルは 0..pathString.length でクランプする
+        function getKeyIndexFromCursor(pathString, cursorPosition) {
+            if (!pathString || pathString.trim() === '') return 0;
+            return Math.max(0, Math.min(cursorPosition, pathString.length));
+        }
+
+        // 階層移動
+        async function navigateToPath(path) {
+            // 予測選択時に「既存の検索バー＋予測」で貼り付かないよう、同期タイマーを即キャンセル
+            if (searchSyncTimeout) { clearTimeout(searchSyncTimeout); searchSyncTimeout = null; }
+            currentPath = path;
+            // 検索バーを即時反映（API成否に依存せず、キー列をそのまま表示。編集しやすいようコンマなし）
+            const pathToSync = path || '';
+            const searchInputEl = document.getElementById('searchInput');
+            if (searchInputEl) {
+                searchInputEl.value = pathToSync;
+                searchInputEl.setSelectionRange(pathToSync.length, pathToSync.length);
+                lastNavigateToPathAt = Date.now();
+            }
+            await updateDisplay();
+            // ナビ完了後にカーソル末尾＋モード更新を遅延実行し、候補クリック後の stray click で edit に戻るのを上書きする
+            setTimeout(() => {
+                const inp = document.getElementById('searchInput');
+                if (inp) {
+                    inp.setSelectionRange(inp.value.length, inp.value.length);
+                }
+                if (typeof updateSearchMode === 'function') updateSearchMode();
+            }, 0);
+        }
+
+        // 表示更新
+        async function updateDisplay() {
+            try {
+                // 検索バー→階層の同期タイマーをキャンセル（ナビ後にデバウンスが二重適用されないように）
+                if (searchSyncTimeout) { clearTimeout(searchSyncTimeout); searchSyncTimeout = null; }
+                // 現在のノードを取得（空文字列パスの場合は特別なエンドポイントを使用）
+                let current;
+                try {
+                    const nodeEndpoint = currentPath === '' 
+                        ? '/nodes' 
+                        : `/nodes/${encodeURIComponent(currentPath)}`;
+                    current = await apiCall(nodeEndpoint);
+                    hierarchyTree[currentPath] = current;
+                } catch (error) {
+                    // 404エラーの場合は空のノードを作成
+                    if (error.status === 404 || error.message.includes('404')) {
+                        hierarchyTree[currentPath] = { navLabel: '', content: '', contentLength: 0, children: {} };
+                    } else {
+                        throw error;
+                    }
+                }
+
+                // 子ノードを取得してchildrenを更新
+                try {
+                    // 空文字列パスの場合は特別なエンドポイントを使用
+                    const childrenEndpoint = currentPath === '' 
+                        ? '/nodes/children' 
+                        : `/nodes/${encodeURIComponent(currentPath)}/children`;
+                    const children = await apiCall(childrenEndpoint);
+                    const childrenMap = {};
+                    children.forEach(child => {
+                        const key = child.id.slice(-1);
+                        childrenMap[key] = child.id;
+                        // 子ノードも階層ツリーに追加（既存データを保持しつつ、contentLengthを確実に設定）
+                        if (!hierarchyTree[child.id]) {
+                            hierarchyTree[child.id] = {};
+                        }
+                        hierarchyTree[child.id].navLabel = child.navLabel || '';
+                        hierarchyTree[child.id].content = child.content || '';
+                        hierarchyTree[child.id].contentLength = child.contentLength !== undefined ? child.contentLength : (child.content ? child.content.length : 0);
+                        // childrenは既存のデータを保持（loadTree()で設定されたデータを上書きしない）
+                        if (!hierarchyTree[child.id].children || Object.keys(hierarchyTree[child.id].children).length === 0) {
+                            hierarchyTree[child.id].children = {};
+                        }
+                    });
+                    if (hierarchyTree[currentPath]) {
+                        hierarchyTree[currentPath].children = childrenMap;
+                    }
+                } catch (error) {
+                    console.error('子ノード取得エラー:', error);
+                }
+
+                // キーボードレイアウトを更新
+                updateKeyboardLayout();
+                
+                // 設定文字列を更新
+                updateContentDisplay();
+                updateBreadcrumb();
+                // 検索バーは navigateToPath でだけ更新する（updateDisplay で上書きしない＝遅延完了時の「入力が全部消える」バグを防ぐ）
+                // 検索バーを常時使う: ナビ後は検索欄にフォーカス（ダイアログ表示中は奪わない）
+                if (!document.getElementById('bindDialog').classList.contains('show')) {
+                    const inp = document.getElementById('searchInput');
+                    if (inp) {
+                        inp.focus();
+                        const len = inp.value.length;
+                        inp.setSelectionRange(len, len);
+                    }
+                }
+                if (typeof updateSearchMode === 'function') updateSearchMode();
+            } catch (error) {
+                console.error('表示更新エラー:', error);
+            }
+        }
+
+        // 表示中のキーボードコンテナを取得（常に単一のキーボードコンテナを返す）
+        function getVisibleKeyboardContainer() {
+            return document.getElementById('keyboardContainer');
+        }
+
+        // キーボードレイアウトを描画（KEYBOARD_LAYOUTS の keyRows から .keyboard-row / .key を生成）
+        function renderKeyboardLayout(layoutId) {
+            const layout = KEYBOARD_LAYOUTS.find(l => l.id === layoutId);
+            if (!layout) return;
+            const container = document.getElementById('keyboardContainer');
+            if (!container) return;
+            container.innerHTML = '';
+            for (const row of layout.keyRows) {
+                const rowEl = document.createElement('div');
+                rowEl.className = 'keyboard-row';
+                for (const keyChar of row) {
+                    const keyEl = document.createElement('div');
+                    keyEl.className = 'key';
+                    const capSpan = document.createElement('span');
+                    capSpan.textContent = keyChar;
+                    keyEl.appendChild(capSpan);
+                    const labelSpan = document.createElement('span');
+                    labelSpan.className = 'key-label';
+                    keyEl.appendChild(labelSpan);
+                    const indicatorSpan = document.createElement('span');
+                    indicatorSpan.className = 'key-indicator';
+                    keyEl.appendChild(indicatorSpan);
+                    rowEl.appendChild(keyEl);
+                }
+                container.appendChild(rowEl);
+            }
+        }
+
+        // キーボードレイアウト更新（表示中キーのみ）
+        function updateKeyboardLayout() {
+            const container = getVisibleKeyboardContainer();
+            if (!container) return;
+            const current = getNode(currentPath);
+            const children = current.children || {};
+            
+            container.querySelectorAll('.key').forEach(keyEl => {
+                const key = keyEl.querySelector('span').textContent.toLowerCase();
+                const childPath = currentPath + key;
+                const childNode = getNode(childPath);
+                
+                // クラスをリセット
+                keyEl.classList.remove('bound', 'unbound');
+                
+                if (childNode && childNode.navLabel) {
+                    keyEl.classList.add('bound');
+                    let labelEl = keyEl.querySelector('.key-label');
+                    if (!labelEl) {
+                        labelEl = document.createElement('span');
+                        labelEl.className = 'key-label';
+                        keyEl.appendChild(labelEl);
+                    }
+                    labelEl.textContent = childNode.navLabel;
+                } else {
+                    keyEl.classList.add('unbound');
+                    let labelEl = keyEl.querySelector('.key-label');
+                    if (!labelEl) {
+                        labelEl = document.createElement('span');
+                        labelEl.className = 'key-label';
+                        keyEl.appendChild(labelEl);
+                    }
+                    labelEl.textContent = '[未設定]';
+                }
+                
+                // 文字数インジケータの更新（先に大きさ10刻み→最大で色10刻み）
+                let indicatorEl = keyEl.querySelector('.key-indicator');
+                if (!indicatorEl) {
+                    indicatorEl = document.createElement('span');
+                    indicatorEl.className = 'key-indicator';
+                    keyEl.appendChild(indicatorEl);
+                }
+                
+                // contentLengthを優先的に使用、なければcontentから計算
+                const contentLength = (childNode && childNode.contentLength !== undefined) 
+                    ? childNode.contentLength 
+                    : (childNode && childNode.content ? childNode.content.length : 0);
+                
+                indicatorEl.classList.remove('empty', 'small', 'medium', 'large', 'xlarge');
+                for (let i = 1; i <= 9; i++) indicatorEl.classList.remove('color-' + i);
+                
+                if (contentLength === 0) {
+                    indicatorEl.classList.add('empty');
+                } else if (contentLength <= 200) {
+                    indicatorEl.classList.add('small');
+                } else if (contentLength <= 400) {
+                    indicatorEl.classList.add('medium');
+                } else if (contentLength <= 600) {
+                    indicatorEl.classList.add('large');
+                } else if (contentLength <= 800) {
+                    indicatorEl.classList.add('xlarge');
+                } else {
+                    indicatorEl.classList.add('xlarge');
+                    const colorIndex = Math.min(9, Math.floor((contentLength - 801) / 200) + 1);
+                    indicatorEl.classList.add('color-' + colorIndex);
+                }
+                // 貼り付け先キーのハイライト
+                keyEl.classList.toggle('paste-target', pasteTargetKey === key);
+            });
+        }
+
+        // 設定文字列表示更新（パネル内 Navラベル + 設定文字列を分けて表示。タイトルも更新）
+        function updateContentDisplay() {
+            const sourceNode = getNode(currentPath);
+            const contentEl = document.getElementById('panelContentNav');
+            const labelEl = document.getElementById('panelNavLabel');
+            const stringEl = document.getElementById('panelContentString');
+            const titleEl = document.getElementById('autocomplete-panel-title');
+            if (!contentEl || !titleEl) return;
+
+            // タイトル: 〇層目の〇 — Nav: 名前（未割り当てのときは全層で非表示）
+            const navLabelText = sourceNode.navLabel ? `Nav: ${sourceNode.navLabel}` : 'Nav: Unassigned';
+            if (navLabelText === 'Nav: Unassigned') {
+                titleEl.textContent = '';
+            } else if (currentPath === '') {
+                titleEl.textContent = getLayerLabelForPath('') + ' — ' + navLabelText;
+            } else {
+                const layerDepth = getLayerDepthForPath(currentPath);
+                const keyAtLayer = currentPath.slice(-1);
+                const layerName = (LAYER_SETTINGS[layerDepth] || { name: `${layerDepth}層目` }).name;
+                titleEl.textContent = `${layerName}の${keyAtLayer} — ${navLabelText}`;
+            }
+
+            // Nav とその名前
+            if (labelEl) {
+                labelEl.textContent = sourceNode.navLabel ? `Nav: ${sourceNode.navLabel}` : 'Nav: Unassigned';
+            }
+            // 設定文字列エリア: content のみ（クリップボード用は親の data-content）
+            if (stringEl) {
+                if (sourceNode.content) {
+                    stringEl.textContent = sourceNode.content;
+                    stringEl.style.color = '#e0e0e0';
+                } else {
+                    stringEl.textContent = '[未設定] Ctrl+Enterで設定';
+                    stringEl.style.color = '#858585';
+                }
+            }
+            if (sourceNode.content) {
+                contentEl.setAttribute('data-content', sourceNode.content);
+            } else {
+                contentEl.removeAttribute('data-content');
+            }
+        }
+
+        // キーフィードバックをクリアする
+        function clearKeyFeedback() {
+            const el = document.getElementById('keyFeedback');
+            if (el) {
+                el.textContent = '';
+                el.classList.remove('show');
+            }
+            updateBreadcrumb(); // パンくず表示を復元
+        }
+
+        // パンくずナビゲーションを更新する
+        function updateBreadcrumb() {
+            const breadcrumbNav = document.getElementById('breadcrumbNav');
+            if (!breadcrumbNav) return;
+
+            // まずパンくずをクリア
+            breadcrumbNav.innerHTML = '';
+            
+            // 現在のパスをセグメントに分割
+            const segments = currentPath.split('/').filter(s => s !== '');
+
+            // ルート要素を追加
+            const rootItem = document.createElement('span');
+            rootItem.classList.add('breadcrumb-item');
+            const rootLink = document.createElement('a');
+            rootLink.href = '#';
+            rootLink.textContent = 'root';
+            rootLink.setAttribute('aria-label', 'ルート');
+            rootLink.setAttribute('tabindex', '0');
+            rootLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                navigateToPath('');
+            });
+            rootLink.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    navigateToPath('');
+                }
+            });
+            rootItem.appendChild(rootLink);
+            breadcrumbNav.appendChild(rootItem);
+
+            let pathAccumulator = '';
+            segments.forEach((segment, index) => {
+                pathAccumulator += '/' + segment;
+                
+                const separator = document.createElement('span');
+                separator.classList.add('breadcrumb-separator');
+                separator.textContent = '>';
+                separator.setAttribute('aria-hidden', 'true');
+                breadcrumbNav.appendChild(separator);
+
+                const item = document.createElement('span');
+                item.classList.add('breadcrumb-item');
+                
+                let label = '';
+                const node = getNode(pathAccumulator);
+                if (node.navLabel) {
+                    label = node.navLabel;
+                } else {
+                    label = getLayerLabelForPath(pathAccumulator);
+                }
+                
+                const sanitizedLabel = escapeHtml(label);
+
+                if (index === segments.length - 1) {
+                    // 最後の要素はリンクにせず、breadcrumb-currentクラスを適用
+                    item.classList.add('breadcrumb-current');
+                    item.textContent = sanitizedLabel;
+                    item.setAttribute('aria-current', 'page');
+                } else {
+                    // それ以外の要素はリンク
+                    const link = document.createElement('a');
+                    link.href = '#';
+                    link.textContent = sanitizedLabel;
+                    link.setAttribute('aria-label', `${label} へ移動`);
+                    link.setAttribute('tabindex', '0');
+                    const currentSegmentPath = pathAccumulator; // クロージャのために現在のパスを保存
+                    link.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        navigateToPath(currentSegmentPath);
+                    });
+                    link.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            navigateToPath(currentSegmentPath);
+                        }
+                    });
+                    item.appendChild(link);
+                }
+                breadcrumbNav.appendChild(item);
+            });
+
+            // パンくずにコンテンツがあるかどうかに基づいて表示を切り替える
+            if (segments.length === 0 && currentPath === '') {
+                breadcrumbNav.style.display = 'none';
+            } else {
+                breadcrumbNav.style.display = 'flex'; // または 'block' / 'grid' など、CSSで定義した表示スタイル
+            }
+        }
+
+        // クリップボードにコピー
+        async function copyToClipboard(text) {
+            if (!text || text === '[未設定] Ctrl+Enterで設定') return false;
+            try {
+                await navigator.clipboard.writeText(text);
+                return true;
+            } catch (err) {
+                // フォールバック: 古いブラウザ対応
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                textArea.style.position = 'fixed';
+                textArea.style.opacity = '0';
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    return true;
+                } catch (e) {
+                    document.body.removeChild(textArea);
+                    return false;
+                }
+            }
+        }
+
+        // Tauriでは呼び出し前のアプリへ戻り、クリップボード内容を貼り付ける。
+        async function copyAndPasteToPreviousWindow(text) {
+            const success = await copyToClipboard(text);
+            if (!success) return false;
+            const invoke = window.__TAURI__?.core?.invoke;
+            if (invoke && pasteMode === 'copy-paste') {
+                try { await invoke('paste_to_previous_window'); }
+                catch (err) { console.warn('貼り付けに失敗しました:', err); }
+            }
+            return true;
+        }
+
+        // コピー成功時の視覚的フィードバック（パネル内 Nav の場合は設定文字列エリアのみメッセージ表示）
+        function showCopyFeedback(element, success) {
+            if (success === undefined) success = true;
+            element.classList.remove('copy-feedback', 'copy-feedback-error');
+            element.classList.add(success ? 'copy-feedback' : 'copy-feedback-error');
+            const stringEl = element.id === 'panelContentNav' ? document.getElementById('panelContentString') : null;
+            const targetEl = stringEl || element;
+            const originalText = targetEl.textContent;
+            const originalData = element.getAttribute('data-content');
+            targetEl.setAttribute('data-feedback-original', originalText || '');
+            targetEl.textContent = success ? 'コピーしました' : 'コピーに失敗しました';
+            setTimeout(() => {
+                element.classList.remove('copy-feedback', 'copy-feedback-error');
+                const restored = targetEl.getAttribute('data-feedback-original');
+                targetEl.removeAttribute('data-feedback-original');
+                if (restored !== null) targetEl.textContent = restored;
+                if (originalData !== null) element.setAttribute('data-content', originalData);
+                else element.removeAttribute('data-content');
+            }, 450);
+        }
+
+        // 未割り当てキー押下時のエラー表示（設定ダイアログは開かず、キーバインドで開く旨を案内）
+        // 該当キーを一瞬赤くする（表示中のキーボード内のキーのみ対象）
+        function showKeyError(keyChar) {
+            const bc = document.getElementById('breadcrumbNav');
+            if (bc) bc.style.display = 'none';
+            const keyCharNorm = keyChar.toLowerCase();
+            const container = getVisibleKeyboardContainer();
+            if (!container) return;
+            container.querySelectorAll('.key').forEach(keyEl => {
+                const char = keyEl.querySelector('span')?.textContent?.trim()?.toLowerCase();
+                if (char === keyCharNorm) {
+                    keyEl.classList.add('key-error');
+                    clearTimeout(keyEl._errorTid);
+                    keyEl._errorTid = setTimeout(() => {
+                        keyEl.classList.remove('key-error');
+                    }, 300);
+                }
+            });
+            const el = document.getElementById('keyFeedback');
+            if (!el) return;
+            el.textContent = `キー「${keyChar}」には割り当てがありません。Ctrl+Alt+${keyChar} で設定`;
+            el.classList.add('show');
+            clearTimeout(showKeyError._tid);
+            showKeyError._tid = setTimeout(() => {
+                clearKeyFeedback();
+            }, 3500);
+        }
+
+        // キーボードクリック時の処理（イベント委譲：表示中・非表示のどちらのキーでも同じ handleKeyPress が動く）
+        const keyboardSectionEl = document.getElementById('keyboardSection');
+        if (keyboardSectionEl) {
+            keyboardSectionEl.addEventListener('click', (e) => {
+                const keyEl = e.target.closest('.key');
+                if (!keyEl) return;
+                const span = keyEl.querySelector('span');
+                const keyChar = span?.textContent?.trim()?.toLowerCase();
+                if (keyChar) handleKeyPress(keyChar);
+            });
+        }
+
+        // キー入力処理（未割り当てのときはエラー表示のみ。設定は Ctrl+Alt+英数字 で開く）
+        async function handleKeyPress(keyChar) {
+            const newPath = currentPath + keyChar;
+            const childNode = getNode(newPath);
+            
+            if (childNode && childNode.navLabel) {
+                // 設定済みキー: 階層を移動
+                await navigateToPath(newPath);
+            } else {
+                // 未割り当てキー: エラー表示（設定ダイアログは開かない）
+                showKeyError(keyChar);
+                // 検索バー→階層の同期タイマーをキャンセルし、検索バーを現在階層に合わせる（無効キー押下後に1層目に戻るのを防ぐ）
+                if (searchSyncTimeout) { clearTimeout(searchSyncTimeout); searchSyncTimeout = null; }
+                const searchInputEl = document.getElementById('searchInput');
+                if (searchInputEl) {
+                    const current = getNode(currentPath);
+                    // ルート時は常に空白
+                    const displayValue = (currentPath && currentPath.length > 0)
+                        ? currentPath
+                        : '';
+                    searchInputEl.value = displayValue;
+                }
+            }
+        }
+
+        // 設定ダイアログを開く
+        async function openBindDialog(key) {
+            const dialogEl = document.getElementById('bindDialog');
+            const navLabelInput = document.getElementById('bindNavLabelInput');
+            const contentInput = document.getElementById('bindContentInput');
+            if (!dialogEl || !navLabelInput || !contentInput) return;
+            const newPath = currentPath + key;
+            const existingNode = getNode(newPath);
+            const keyNameEl = document.getElementById('bindKeyName');
+            const layerNameEl = document.getElementById('bindLayerName');
+            const currentPathEl = document.getElementById('bindCurrentPath');
+            if (keyNameEl) keyNameEl.textContent = key;
+            if (layerNameEl) layerNameEl.textContent = getLayerLabelForPath(newPath);
+            if (currentPathEl) currentPathEl.textContent = currentPath || '';
+            navLabelInput.value = existingNode?.navLabel || '';
+            contentInput.value = existingNode?.content || '';
+            dialogEl.setAttribute('data-target-path', newPath);
+            dialogEl.classList.add('show');
+            navLabelInput.focus();
+        }
+
+        /** 現在の階層のナビ・設定文字列を編集するため、キーバインド設定モーダルを開く（右パネルは表示専用のため編集はモーダルで行う） */
+        function openBindDialogForCurrentPath() {
+            const current = getNode(currentPath);
+            const keyNameEl = document.getElementById('bindKeyName');
+            const currentPathEl = document.getElementById('bindCurrentPath');
+            const navLabelInputEl = document.getElementById('bindNavLabelInput');
+            const contentInputEl = document.getElementById('bindContentInput');
+            const dialogEl = document.getElementById('bindDialog');
+            if (keyNameEl) keyNameEl.textContent = '[現在の階層]';
+            if (currentPathEl) currentPathEl.textContent = currentPath || '';
+            if (navLabelInputEl) navLabelInputEl.value = current ? (current.navLabel || '') : '';
+            if (contentInputEl) contentInputEl.value = current ? (current.content || '') : '';
+            if (dialogEl) {
+                dialogEl.setAttribute('data-target-path', currentPath);
+                dialogEl.classList.add('show');
+            }
+            if (contentInputEl) contentInputEl.focus();
+        }
+
+        // 設定ダイアログを閉じる
+        function closeBindDialog() {
+            const el = document.getElementById('bindDialog');
+            if (el) el.classList.remove('show');
+        }
+
+        // ヘルプモーダル内のショートカット表記をモード（QWERTY/テンキー）に応じて更新、Fキー行ラベルは固定（F1=ヘルプ等）
+        function updateHelpModalText() {
+            const titleEl = document.getElementById('helpModalTitle');
+            const altLineEl = document.getElementById('helpLineAltKey');
+            const ctrlAltLineEl = document.getElementById('helpLineCtrlAltKey');
+            if (inputMode === 'tenkey') {
+                if (titleEl) titleEl.textContent = '操作（数字はマップ用のため、以下で操作）';
+                if (altLineEl) altLineEl.innerHTML = '<kbd>Alt</kbd>+<kbd>数字キー</kbd> 貼り付け先キーを選択（キーボード上でハイライト）→ 検索で項目を選び <kbd>Enter</kbd> でそのキーのバーに文字列を貼り付け';
+                if (ctrlAltLineEl) ctrlAltLineEl.innerHTML = '<kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>数字キー</kbd> そのキーの設定ダイアログを開く';
+            } else {
+                if (titleEl) titleEl.textContent = '操作（英数字はマップ用のため、以下で操作）';
+                if (altLineEl) altLineEl.innerHTML = '<kbd>Alt</kbd>+<kbd>英数字キー</kbd> 貼り付け先キーを選択（キーボード上でハイライト）→ 検索で項目を選び <kbd>Enter</kbd> でそのキーのバーに文字列を貼り付け';
+                if (ctrlAltLineEl) ctrlAltLineEl.innerHTML = '<kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>英数字キー</kbd> そのキーの設定ダイアログを開く';
+            }
+            // Fキー行: F1=ヘルプ, F2=エクスポート, F3=インポート, F4=テンキー, F5=設定, F6=モード
+            document.querySelectorAll('.fkey-row .fkey-btn').forEach(function(btn) {
+                const f = parseInt(btn.getAttribute('data-f'), 10);
+                if (f === 1) {
+                    btn.textContent = 'Help (F1)';
+                    btn.className = 'fkey-btn fkey-btn-help';
+                    btn.setAttribute('title', 'Help (F1)');
+                    btn.setAttribute('aria-label', 'Show help (F1)');
+                } else if (f === 2) {
+                    btn.textContent = 'Export (F2)';
+                    btn.className = 'fkey-btn fkey-btn-export';
+                    btn.setAttribute('title', 'Export (F2)');
+                    btn.setAttribute('aria-label', 'Export (F2)');
+                } else if (f === 3) {
+                    btn.textContent = 'Import (F3)';
+                    btn.className = 'fkey-btn fkey-btn-import';
+                    btn.setAttribute('title', 'Import (F3)');
+                    btn.setAttribute('aria-label', 'Import (F3)');
+                } else if (f === 4) {
+                    btn.textContent = 'Keyboard (F4)';
+                    btn.className = 'fkey-btn fkey-btn-tenkey';
+                    btn.setAttribute('title', 'Keyboard (F4)');
+                    btn.setAttribute('aria-label', 'Keyboard (F4)');
+                } else if (f === 5) {
+                    btn.textContent = 'Setting (F5)';
+                    btn.className = 'fkey-btn fkey-btn-setting';
+                    btn.setAttribute('title', 'Setting (F5)');
+                    btn.setAttribute('aria-label', 'Setting (F5)');
+                } else if (f === 6) {
+                    btn.textContent = 'Mode (F6)';
+                    btn.className = 'fkey-btn fkey-btn-mode';
+                    btn.setAttribute('title', 'Mode (F6) モード選択');
+                    btn.setAttribute('aria-label', 'Mode (F6) モード選択');
+                }
+            });
+        }
+
+        // エクスポート: /api/export を取得してJSONファイルとしてダウンロード
+        async function doExport() {
+            try {
+                const res = await fetch(`${API_BASE}/export`);
+                if (!res.ok) throw new Error(res.statusText);
+                const data = await res.json();
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+                a.download = 'export_' + ts + '.json';
+                a.click();
+                URL.revokeObjectURL(url);
+            } catch (err) {
+                console.error('エクスポートエラー:', err);
+                alert('エクスポートに失敗しました: ' + err.message);
+            }
+        }
+
+        // インポート: ファイル選択 → /api/import にPOST → ツリー再読み込み（F3またはラベルクリックでファイル選択）
+        function doImport() {
+            const input = document.getElementById('importFileInput');
+            if (input) {
+                input.value = '';
+                input.click();
+                // 一部環境で programmatic click がブロックされる場合のフォールバック: ラベルにフォーカスし Enter で開けるようにする
+                const label = document.querySelector('label[for="importFileInput"]');
+                if (label) label.focus();
+            }
+        }
+        (function setupImportFileInput() {
+            const input = document.getElementById('importFileInput');
+            if (!input) return;
+            input.addEventListener('change', async function() {
+                const file = input.files && input.files[0];
+                input.value = '';
+                if (!file) return;
+                try {
+                    const text = await new Promise((resolve, reject) => {
+                        const r = new FileReader();
+                        r.onload = () => resolve(r.result);
+                        r.onerror = () => reject(new Error('ファイルの読み込みに失敗しました'));
+                        r.readAsText(file, 'utf-8');
+                    });
+                    const payload = JSON.parse(text);
+                    if (payload.schema_version == null || !Array.isArray(payload.nodes)) {
+                        alert('無効な形式です。schema_version と nodes 配列が必要です。');
+                        return;
+                    }
+                    const res = await fetch(`${API_BASE}/import`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    const result = await res.json().catch(() => ({}));
+                    if (!res.ok) {
+                        alert('インポートに失敗しました: ' + (result.error || res.statusText));
+                        return;
+                    }
+                    await loadTree();
+                    if (typeof updateDisplay === 'function') await updateDisplay();
+                    alert('インポートが完了しました。');
+                } catch (err) {
+                    console.error('インポートエラー:', err);
+                    alert('インポートに失敗しました: ' + err.message);
+                }
+            });
+        })();
+
+        // ヘルプモーダルを開く
+        function openHelpModal() {
+            updateHelpModalText();
+            const el = document.getElementById('helpModalOverlay');
+            if (!el) return;
+            el.classList.add('show');
+            el.setAttribute('aria-hidden', 'false');
+        }
+        // ヘルプモーダルを閉じる
+        function closeHelpModal() {
+            const el = document.getElementById('helpModalOverlay');
+            if (!el) return;
+            el.classList.remove('show');
+            el.setAttribute('aria-hidden', 'true');
+        }
+
+        // テンキー設定モーダルを開く（F4）— レジストリからボタンを動的生成
+        function openTenkeySettingsModal() {
+            const choicesEl = document.getElementById('tenkeyModalChoices');
+            if (choicesEl) {
+                choicesEl.innerHTML = '';
+                KEYBOARD_LAYOUTS.forEach(layout => {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.setAttribute('data-layout-id', layout.id);
+                    btn.textContent = layout.displayName;
+                    const isActive = inputMode === layout.id;
+                    btn.classList.toggle('active', isActive);
+                    btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+                    choicesEl.appendChild(btn);
+                });
+            }
+            const el = document.getElementById('tenkeyModalOverlay');
+            if (!el) return;
+            el.classList.add('show');
+            el.setAttribute('aria-hidden', 'false');
+        }
+        // テンキー設定モーダルを閉じる
+        function closeTenkeySettingsModal() {
+            const el = document.getElementById('tenkeyModalOverlay');
+            if (!el) return;
+            el.classList.remove('show');
+            el.setAttribute('aria-hidden', 'true');
+        }
+
+        // 設定モーダルを開く（F5）
+        function openSettingModal() {
+            const el = document.getElementById('settingModalOverlay');
+            if (!el) return;
+            el.classList.add('show');
+            el.setAttribute('aria-hidden', 'false');
+        }
+        // 設定モーダルを閉じる
+        function closeSettingModal() {
+            const el = document.getElementById('settingModalOverlay');
+            if (!el) return;
+            el.classList.remove('show');
+            el.setAttribute('aria-hidden', 'true');
+        }
+
+        // モードモーダルを開く（F6）
+        function openModeModal() {
+            const el = document.getElementById('modeModalOverlay');
+            if (!el) return;
+            el.querySelectorAll('input[name="pasteMode"]').forEach((input) => { input.checked = input.value === pasteMode; });
+            el.classList.add('show');
+            el.setAttribute('aria-hidden', 'false');
+        }
+        // モードモーダルを閉じる
+        function closeModeModal() {
+            const el = document.getElementById('modeModalOverlay');
+            if (!el) return;
+            el.classList.remove('show');
+            el.setAttribute('aria-hidden', 'true');
+        }
+
+        // ヘルプモーダル: オーバーレイクリック・閉じるボタン・ヒントクリック
+        const helpModalOverlayEl = document.getElementById('helpModalOverlay');
+        if (helpModalOverlayEl) helpModalOverlayEl.addEventListener('click', (e) => {
+            if (e.target.id === 'helpModalOverlay') closeHelpModal();
+        });
+        const helpModalCloseEl = document.getElementById('helpModalClose');
+        if (helpModalCloseEl) helpModalCloseEl.addEventListener('click', closeHelpModal);
+        // テンキー設定モーダル: オーバーレイクリック・閉じる・選択で閉じる
+        const tenkeyModalOverlayEl = document.getElementById('tenkeyModalOverlay');
+        if (tenkeyModalOverlayEl) tenkeyModalOverlayEl.addEventListener('click', (e) => {
+            if (e.target.id === 'tenkeyModalOverlay') closeTenkeySettingsModal();
+        });
+        const tenkeyModalCloseEl = document.getElementById('tenkeyModalClose');
+        if (tenkeyModalCloseEl) tenkeyModalCloseEl.addEventListener('click', closeTenkeySettingsModal);
+        const tenkeyModalChoicesEl = document.getElementById('tenkeyModalChoices');
+        if (tenkeyModalChoicesEl) tenkeyModalChoicesEl.addEventListener('click', (e) => {
+            const btn = e.target.closest('button[data-layout-id]');
+            if (btn) {
+                setInputMode(btn.getAttribute('data-layout-id'));
+                closeTenkeySettingsModal();
+            }
+        });
+        // 設定モーダル: オーバーレイクリック・閉じるボタン
+        const settingModalOverlayEl = document.getElementById('settingModalOverlay');
+        if (settingModalOverlayEl) settingModalOverlayEl.addEventListener('click', (e) => {
+            if (e.target.id === 'settingModalOverlay') closeSettingModal();
+        });
+        const settingModalCloseEl = document.getElementById('settingModalClose');
+        if (settingModalCloseEl) settingModalCloseEl.addEventListener('click', closeSettingModal);
+        // モードモーダル: オーバーレイクリック・閉じるボタン
+        const modeModalOverlayEl = document.getElementById('modeModalOverlay');
+        if (modeModalOverlayEl) modeModalOverlayEl.addEventListener('click', (e) => {
+            if (e.target.id === 'modeModalOverlay') closeModeModal();
+        });
+        const modeModalCloseEl = document.getElementById('modeModalClose');
+        if (modeModalCloseEl) modeModalCloseEl.addEventListener('click', closeModeModal);
+        document.querySelectorAll('input[name="pasteMode"]').forEach((input) => input.addEventListener('change', (event) => {
+            pasteMode = event.target.value;
+            localStorage.setItem('mineparser.pasteMode', pasteMode);
+        }));
+        // F1〜F6 ボタン行: F1=ヘルプ, F2=エクスポート, F3=インポート, F4=テンキー設定, F5=設定, F6=モード
+        const fkeyRowEl = document.querySelector('.fkey-row');
+        if (fkeyRowEl) {
+            fkeyRowEl.addEventListener('click', (e) => {
+                const btn = e.target.closest('.fkey-btn');
+                if (!btn) return;
+                const f = parseInt(btn.getAttribute('data-f'), 10);
+                if (f === 2) { doExport(); return; }
+                if (f === 3) { doImport(); return; }
+                if (f === 1) openHelpModal();
+                if (f === 4) openTenkeySettingsModal();
+                if (f === 5) openSettingModal();
+                if (f === 6) openModeModal();
+            });
+            fkeyRowEl.addEventListener('keydown', (e) => {
+                const btn = e.target.closest('.fkey-btn');
+                if (!btn || (e.key !== 'Enter' && e.key !== ' ')) return;
+                const f = parseInt(btn.getAttribute('data-f'), 10);
+                if (f === 2) { e.preventDefault(); doExport(); return; }
+                if (f === 3) { e.preventDefault(); doImport(); return; }
+                if (f === 1) { e.preventDefault(); openHelpModal(); }
+                if (f === 4) { e.preventDefault(); openTenkeySettingsModal(); }
+                if (f === 5) { e.preventDefault(); openSettingModal(); }
+                if (f === 6) { e.preventDefault(); openModeModal(); }
+            });
+        }
+        // 初回表示でFキー行のラベルを反映
+        updateHelpModalText();
+
+        // モード切替（レイアウトID指定）— 描画してからモーダル内ボタンの表示を同期
+        function setInputMode(layoutId) {
+            inputMode = layoutId;
+            const section = document.getElementById('keyboardSection');
+            if (section) section.dataset.mode = layoutId;
+            renderKeyboardLayout(layoutId);
+            // モーダルが開いていれば #tenkeyModalChoices 内のボタンの aria-pressed / .active を更新
+            const choicesEl = document.getElementById('tenkeyModalChoices');
+            if (choicesEl) {
+                choicesEl.querySelectorAll('button[data-layout-id]').forEach(btn => {
+                    const isActive = btn.getAttribute('data-layout-id') === layoutId;
+                    btn.classList.toggle('active', isActive);
+                    btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+                });
+            }
+            updateKeyboardLayout();
+            updateHelpModalText();
+        }
+
+        // 設定を保存（ナビラベル＋内容の両方をセット）
+        async function saveBind() {
+            const dialogEl = document.getElementById('bindDialog');
+            const navLabelInput = document.getElementById('bindNavLabelInput');
+            const contentInput = document.getElementById('bindContentInput');
+            if (!dialogEl || !navLabelInput || !contentInput) return;
+            const targetPath = dialogEl.getAttribute('data-target-path');
+            const navLabelTrimmed = navLabelInput.value.trim();
+            const content = contentInput.value;
+            // 現在の階層のみ内容だけの更新を許可（ナビラベルは既存を維持）
+            const navLabel = navLabelTrimmed || (targetPath === currentPath ? (getNode(currentPath).navLabel || '') : '');
+            
+            // ルート（targetPath === ''）はナビ未入力でも保存可能。子ノードのみナビ必須
+            if (!navLabel && targetPath !== '') {
+                alert('ナビゲーション用単語を入力してください');
+                return;
+            }
+            
+            try {
+                // APIでノードを保存（navLabel と content の両方をセット）。ルートは POST /api/nodes を使用
+                const nodeEndpoint = targetPath === '' ? '/nodes' : `/nodes/${encodeURIComponent(targetPath)}`;
+                await apiCall(nodeEndpoint, {
+                    method: 'POST',
+                    body: JSON.stringify({ navLabel, content })
+                });
+                
+                // 階層ツリーを再読み込み
+                await loadTree();
+                
+                // 現在の階層にいる場合は表示を更新
+                if (targetPath === currentPath) {
+                    await updateDisplay();
+                } else {
+                    // キーボードレイアウトを更新
+                    updateKeyboardLayout();
+                }
+                
+                closeBindDialog();
+            } catch (error) {
+                console.error('保存エラー:', error);
+                alert('保存に失敗しました: ' + error.message);
+            }
+        }
+
+        // 検索・補完
+        const searchInput = document.getElementById('searchInput');
+        const autocomplete = document.getElementById('autocomplete');
+        let selectedIndex = 0;
+        let lastAutocompleteResults = []; // キーバインドでEnter選択するために保持（ノード or 操作コマンドの統合リスト）
+        let pasteTargetKey = null; // Alt+キーで選んだ貼り付け先のキー（例: 'q'）
+        let focusAutocompleteTimeout = null; // フォーカス時の補完表示遅延（連続クリックでドロップダウンを誤クリックしないため）
+
+        // 検索欄入力制限: 許可 a-z, 0-9, 非ASCII（日本語等）。禁止は記号・A-Z・スペース（検索で問題になるためスペースは入力不可）。
+        // フォールバックは CAPS LOCK オンかつ Shift 押下時のみ: Shift+Digit0..9 → 0..9, Shift+KeyA..Z → a..z。それ以外では禁止文字はブロックのみ。
+        const SEARCH_ALLOWED_ASCII = /^[a-z0-9]$/;
+        function getSearchFallbackFromCode(code, shiftKey) {
+            if (!shiftKey || !code) return null;
+            const digitMatch = /^Digit([0-9])$/.exec(code);
+            if (digitMatch) return digitMatch[1];
+            const keyMatch = /^Key([A-Z])$/.exec(code);
+            if (keyMatch) return keyMatch[1].toLowerCase();
+            return null;
+        }
+        function isSearchCharAllowed(c) {
+            if (typeof c !== 'string' || c.length !== 1) return false;
+            return SEARCH_ALLOWED_ASCII.test(c);
+        }
+        function filterSearchInputValue(str) {
+            if (typeof str !== 'string') return '';
+            return str.split('').filter(isSearchCharAllowed).join('');
+        }
+        function insertAtCursor(inputEl, char) {
+            if (!inputEl || typeof char !== 'string' || char.length !== 1) return;
+            const start = inputEl.selectionStart ?? inputEl.value.length;
+            const end = inputEl.selectionEnd ?? start;
+            const v = inputEl.value;
+            const newVal = v.slice(0, start) + char + v.slice(end);
+            inputEl.value = newVal;
+            const pos = start + 1;
+            inputEl.setSelectionRange(pos, pos);
+            inputEl.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+
+        // 操作コマンド一覧（検索欄の補完に表示し、選択で実行）
+        const OPERATION_COMMANDS = [
+            { id: 'nav-up', label: '階層を戻る', shortcut: 'Backspace / Alt+←', action: () => { if (currentPath.length > 0) navigateToPath(currentPath.slice(0, -1)); } },
+            { id: 'help', label: 'ヘルプを表示', shortcut: 'F1', action: () => openHelpModal() },
+            { id: 'focus-search', label: '検索にフォーカス', shortcut: 'Ctrl+K', action: () => { if (searchInput) searchInput.focus(); } },
+            { id: 'copy-clipboard', label: '設定文字列をクリップボードにコピー（使う）', shortcut: 'Ctrl+C / Enter', action: async () => { const contentEl = document.getElementById('panelContentNav'); if (!contentEl) return; const content = contentEl.getAttribute('data-content'); if (content) { const success = await copyAndPasteToPreviousWindow(content); showCopyFeedback(contentEl, success); } } },
+            { id: 'edit-current', label: '現在の階層を編集', shortcut: 'Ctrl+Shift+N', action: () => { const current = getNode(currentPath); const keyNameEl = document.getElementById('bindKeyName'); const currentPathEl = document.getElementById('bindCurrentPath'); const navLabelInputEl = document.getElementById('bindNavLabelInput'); const contentInputEl = document.getElementById('bindContentInput'); const dialogEl = document.getElementById('bindDialog'); if (keyNameEl) keyNameEl.textContent = '[現在の階層]'; if (currentPathEl) currentPathEl.textContent = currentPath || ''; if (navLabelInputEl) navLabelInputEl.value = current ? current.navLabel || '' : ''; if (contentInputEl) contentInputEl.value = current ? current.content || '' : ''; if (dialogEl) { dialogEl.setAttribute('data-target-path', currentPath); dialogEl.classList.add('show'); } if (navLabelInputEl) navLabelInputEl.focus(); } },
+            { id: 'close-dialog', label: 'ダイアログを閉じる', shortcut: 'Escape', action: () => closeBindDialog() }
+        ];
+
+        function getOperationCommandsFiltered(query) {
+            const q = (query || '').trim().toLowerCase();
+            const shortcutFor = (c) => c.shortcut;
+            if (q.length === 0) return OPERATION_COMMANDS.map(c => ({ type: 'command', ...c, shortcut: shortcutFor(c) }));
+            return OPERATION_COMMANDS
+                .filter(c => (c.label.toLowerCase().includes(q) || (shortcutFor(c) && shortcutFor(c).toLowerCase().includes(q))))
+                .map(c => ({ type: 'command', ...c, shortcut: shortcutFor(c) }));
+        }
+
+        // 現在階層の子ノードをキーボード順で取得（検索とバインドを同期）
+        function getCurrentLayerBindItems() {
+            const keyEls = document.querySelectorAll('.key');
+            const items = [];
+            for (const keyEl of keyEls) {
+                const span = keyEl.querySelector('span');
+                if (!span) continue;
+                const keyChar = span.textContent.trim().toLowerCase();
+                const childPath = currentPath + keyChar;
+                const node = getNode(childPath);
+                if (node && node.navLabel) {
+                    items.push({ type: 'node', id: childPath, navLabel: node.navLabel, keyChar });
+                }
+            }
+            return items;
+        }
+
+        // 任意のパスでの階層のバインドを取得（予測パスが到達した階層での候補用）
+        function getLayerBindItems(path) {
+            const items = [];
+            const node = getNode(path);
+            if (!node || !node.children) return items;
+            
+            // childrenオブジェクトから子ノードを取得
+            Object.keys(node.children).forEach(keyChar => {
+                const childPath = node.children[keyChar];
+                const childNode = getNode(childPath);
+                if (childNode && childNode.navLabel) {
+                    items.push({ 
+                        type: 'node', 
+                        id: childPath, 
+                        navLabel: childNode.navLabel, 
+                        keyChar: keyChar,
+                        layerPath: path // どの階層での候補かを記録
+                    });
+                }
+            });
+            return items;
+        }
+
+        // 現在階層のバインドをクエリでフィルタ（キーバインド候補用）
+        function getCurrentLayerBindItemsFiltered(query) {
+            const items = getCurrentLayerBindItems();
+            const q = (query || '').trim().toLowerCase();
+            if (q.length === 0) return items.map(i => ({ type: 'node', ...i }));
+            
+            // 入力文字列に基づいてフィルタ（ラベルまたはキー文字で一致）
+            return items
+                .filter(i => (i.navLabel && i.navLabel.toLowerCase().includes(q)) || (i.keyChar && i.keyChar.includes(q)))
+                .map(i => ({ type: 'node', ...i }));
+        }
+
+        // 編集モードの予測変換: ツリー接続のキーバインド候補のみ（操作コマンドは含めない）
+        function getEmptySearchAutocompleteItems() {
+            const bindItems = getCurrentLayerBindItems();
+            return bindItems.map(i => ({ type: 'node', ...i }));
+        }
+
+        // キーバインド候補: 文字列とカーソル位置から「このキーを別キーに変えたとき」の兄弟候補のみ返す（途中の先の予測は出さない）
+        function getKeybindCandidatesFiltered(query) {
+            // why: 編集時はカーソルを挟む位置のキーを別キーに変えたときに存在するノードだけを候補にする
+            // alt: 途中の先（予測パス・到達階層候補・現在パス候補）は表示しない
+            // assumption: searchInput が参照可能であること
+            let siblingCandidates = [];
+            if (!isNavigationMode() && searchInput) {
+                const pathString = (query || '').trim();
+                const cursorPos = searchInput.selectionStart;
+                const keyIndex = getKeyIndexFromCursor(pathString, cursorPos);
+                const parentPath = pathString.slice(0, keyIndex);
+                siblingCandidates = getLayerBindItems(parentPath).map(i => ({ ...i, isSiblingCandidate: true }));
+            }
+
+            const bindItems = getCurrentLayerBindItemsFiltered(query);
+            return [...siblingCandidates, ...bindItems];
+        }
+
+        // 検索結果に応じて設定文字列・ナビ・マップをリアルタイム更新（ノードのみ）
+        function applySearchResultToDisplay(result) {
+            if (!result) return;
+            if (result.type === 'node' && result.id !== undefined) navigateToPath(result.id);
+        }
+
+        if (searchInput && autocomplete) {
+        searchInput.addEventListener('input', (e) => {
+            // 貼り付け・IME確定時: 禁止文字を除去（許可文字のみ残す）
+            const raw = e.target.value;
+            const filtered = filterSearchInputValue(raw);
+            if (filtered !== raw) {
+                const oldStart = searchInput.selectionStart ?? 0;
+                let newStart = 0;
+                for (let i = 0; i < raw.length && i < oldStart; i++) {
+                    if (isSearchCharAllowed(raw[i])) newStart++;
+                }
+                searchInput.value = filtered;
+                const pos = Math.min(newStart, filtered.length);
+                searchInput.setSelectionRange(pos, pos);
+            }
+            let query = e.target.value;
+            const trimmed = query.trim();
+            const justNavigated = (Date.now() - lastNavigateToPathAt) < 150;
+            // 貼り付け・IME等: 無効な文字列は最長有効プレフィクスに差し替え（カーソルが末尾のときのみ。編集モードでは上書きしない）
+            // validPrefix が空のときは上書きしない＝バックスペースで1文字消しただけの入力を空にしない
+            // 階層移動直後は上書きしない＝一瞬の input で検索バーが消えるバグを防ぐ
+            const cursorAtEnd = searchInput.selectionStart === searchInput.value.length;
+            if (!justNavigated && cursorAtEnd && trimmed !== '' && trimmed !== '（最上位）') {
+                const validPrefix = getLongestValidPath(trimmed);
+                if (validPrefix !== trimmed && validPrefix !== '') {
+                    if (searchSyncTimeout) { clearTimeout(searchSyncTimeout); searchSyncTimeout = null; }
+                    e.target.value = validPrefix;
+                    query = validPrefix;
+                }
+            }
+            if (autocompleteTimeout) clearTimeout(autocompleteTimeout);
+            // 空のときはナビモード扱い。予測パネルを出さない（バックスペースで空にしたときの一瞬表示を防ぐ）
+            if (query.length === 0) {
+                autocomplete.classList.remove('show');
+            } else {
+                // キーバインド候補のみ表示（入力文字列に対してキーバインドを予測）
+                const items = getKeybindCandidatesFiltered(query);
+                if (items.length === 0 && query.length > 0) {
+                    console.log('候補が見つかりませんでした。クエリ:', query);
+                }
+                displayAutocomplete(items);
+            }
+
+            // 検索バー → 階層UI 同期: 編集モード（カーソルが末尾でない）のときは同期しない。階層移動直後は同期しない
+            if (searchSyncTimeout) clearTimeout(searchSyncTimeout);
+            if (!justNavigated) {
+                searchSyncTimeout = setTimeout(() => {
+                    if ((Date.now() - lastNavigateToPathAt) < 150) {
+                        searchSyncTimeout = null;
+                        return;
+                    }
+                    if (searchInput.selectionStart !== searchInput.value.length) {
+                        searchSyncTimeout = null;
+                        return;
+                    }
+                    const trimmed = searchInput.value.trim();
+                    if (trimmed === '' || trimmed === '（最上位）') {
+                        navigateToPath('');
+                    } else {
+                        const validPath = getLongestValidPath(trimmed);
+                        if (validPath !== '') {
+                            navigateToPath(validPath);
+                        }
+                        // validPath が空のときは検索欄を上書きしない（@^→26 など未マッチ入力が消えないようにする）
+                    }
+                    searchSyncTimeout = null;
+                }, 0);
+            }
+            updateSearchMode();
+        });
+
+        searchInput.addEventListener('focus', () => {
+            if (focusAutocompleteTimeout) clearTimeout(focusAutocompleteTimeout);
+            // フォーカス時: ナビモード（カーソル先頭）なら予測パネルは出さない。編集モード時のみ遅延して候補表示
+            focusAutocompleteTimeout = setTimeout(() => {
+                if (isNavigationMode()) {
+                    autocomplete.classList.remove('show');
+                    focusAutocompleteTimeout = null;
+                    return;
+                }
+                const query = searchInput.value;
+                const items = query.length === 0
+                    ? getEmptySearchAutocompleteItems()
+                    : getKeybindCandidatesFiltered(query);
+                displayAutocomplete(items);
+                focusAutocompleteTimeout = null;
+            }, 280);
+            updateSearchMode();
+        });
+
+        searchInput.addEventListener('keyup', () => { updateSearchMode(); });
+        searchInput.addEventListener('click', () => { updateSearchMode(); });
+
+        searchInput.addEventListener('blur', () => {
+            if (focusAutocompleteTimeout) {
+                clearTimeout(focusAutocompleteTimeout);
+                focusAutocompleteTimeout = null;
+            }
+            setTimeout(() => {
+                autocomplete.classList.remove('show');
+            }, 200);
+        });
+
+        // 補完候補を表示（ノード + 操作コマンドの統合リスト）
+        function displayAutocomplete(results) {
+            if (!autocomplete) {
+                console.error('autocomplete要素が見つかりません');
+                return;
+            }
+            
+            autocomplete.innerHTML = '';
+            // 編集モード用: 初期は未選択（Enterでそのまま確定させない。矢印 or クリックで候補を選んでから確定）
+            selectedIndex = -1;
+            lastAutocompleteResults = results || [];
+            
+            if (lastAutocompleteResults.length === 0) {
+                autocomplete.classList.remove('show');
+                return;
+            }
+            // 編集モード用パネル: タイトルを「この位置で有効なキー」に
+            const titleEl = document.getElementById('autocomplete-panel-title');
+            if (titleEl) titleEl.textContent = 'この位置で有効なキー';
+            
+            // デバッグ: 候補数をコンソールに出力
+            console.log('候補を表示:', lastAutocompleteResults.length, '件');
+            
+            lastAutocompleteResults.forEach((entry, index) => {
+                const item = document.createElement('div');
+                let className = 'autocomplete-item';
+                if (entry.type === 'command') {
+                    className += ' command-item';
+                }
+                if (entry.predicted) {
+                    className += ' predicted-item';
+                }
+                item.className = className;
+                // 初期はどの候補も selected にしない（selectedIndex === -1）
+                
+                if (entry.type === 'command') {
+                    item.textContent = entry.label;
+                    item.addEventListener('click', () => {
+                        if (typeof entry.action === 'function') entry.action();
+                        // ナビ系コマンドの場合は updateDisplay() で検索バーが更新されるためクリアしない
+                        autocomplete.classList.remove('show');
+                    });
+                } else {
+                    const navLabel = (entry.navLabel && String(entry.navLabel).trim() !== '') ? entry.navLabel : '(未設定)';
+                    // why: 兄弟候補は「この位置のキーを選んだキーに変える」意図を明示するため別ラベルにする
+                    // alt: 通常ノードと同じ navLabel のみでもよいが、編集モードでの置換であることが分かるようにした
+                    // evidence: 計画書「第4段階：displayAutocomplete のノード描画で isSiblingCandidate のとき」
+                    // assumption: entry.keyChar は getLayerBindItems で付与されている
+                    if (entry.isSiblingCandidate && entry.keyChar != null) {
+                        item.textContent = `このキーを ${entry.keyChar} に変える → ${navLabel}`;
+                    } else {
+                        item.textContent = navLabel;
+                    }
+                    if (entry.predicted) {
+                        // 予測パスを表示（例: "r → u"）
+                        const predictedPath = entry.id.slice(currentPath.length);
+                        const pathDisplay = predictedPath.split('').join(' → ');
+                        const predictedSpan = document.createElement('span');
+                        predictedSpan.className = 'predicted-label';
+                        predictedSpan.textContent = `予測: ${pathDisplay}`;
+                        item.appendChild(predictedSpan);
+                    }
+                    // 到達階層での候補の場合、どの階層での候補かを表示
+                    if (entry.layerPath && entry.layerPath !== currentPath) {
+                        const layerPathDisplay = entry.layerPath.slice(currentPath.length);
+                        const layerSpan = document.createElement('span');
+                        layerSpan.className = 'predicted-label';
+                        layerSpan.style.color = '#ffa500'; // オレンジ色で区別
+                        layerSpan.textContent = `階層 ${layerPathDisplay || 'root'} での候補`;
+                        item.appendChild(layerSpan);
+                    }
+                    item.addEventListener('click', async () => {
+                        // 存在チェック（ツリー構造を維持）
+                        const targetNode = getNode(entry.id);
+                        if (!targetNode) {
+                            alert(`エラー: パス "${entry.id}" は存在しません。ツリー構造を維持するため、設定されているノードのみ移動できます。`);
+                            return;
+                        }
+                        // 予測変換確定時に追記されないよう、確定前に検索欄を選択値で置換する
+                        if (searchSyncTimeout) { clearTimeout(searchSyncTimeout); searchSyncTimeout = null; }
+                        searchInput.value = entry.id;
+                        await navigateToPath(entry.id);
+                        autocomplete.classList.remove('show');
+                    });
+                }
+                autocomplete.appendChild(item);
+            });
+            
+            autocomplete.classList.add('show');
+        }
+
+        // 補完の選択肢をキーで更新（index < 0 のときは未選択）
+        function setAutocompleteSelected(index) {
+            const items = autocomplete.querySelectorAll('.autocomplete-item');
+            if (items.length === 0) return;
+            if (index < 0) {
+                selectedIndex = -1;
+                items.forEach((el) => el.classList.remove('selected'));
+                return;
+            }
+            selectedIndex = ((index % items.length) + items.length) % items.length;
+            items.forEach((el, i) => el.classList.toggle('selected', i === selectedIndex));
+        }
+
+        // ナビモード = カーソルが末尾（例: 1111| → Nav、それ以外は Edit）
+        // 値がカンマで終わっている場合はナビにしない＝「1,」のあと「1」で「1,1」と入力できるようにする
+        function isNavigationMode() {
+            const v = searchInput.value;
+            const len = v.length;
+            if (len > 0 && v.endsWith(',')) return false;
+            return searchInput.selectionStart === len && searchInput.selectionEnd === len;
+        }
+
+        // モードの視覚表示を更新（data-mode とバッジ、パネル内容の切り替え）
+        function updateSearchMode() {
+            const len = searchInput.value.length;
+            const mode = (searchInput.selectionStart === len && searchInput.selectionEnd === len) ? 'nav' : 'edit';
+            const bar = document.querySelector('.search-bar');
+            const badge = document.getElementById('searchModeBadge');
+            const panel = document.getElementById('autocompletePanel');
+            if (bar) bar.setAttribute('data-mode', mode);
+            if (badge) {
+                badge.setAttribute('data-mode', mode);
+                badge.textContent = mode === 'nav' ? 'Nav' : 'Edit';
+            }
+            if (panel) panel.setAttribute('data-mode', mode);
+            const panelTitle = document.getElementById('autocomplete-panel-title');
+            if (mode === 'nav' && typeof updateContentDisplay === 'function') {
+                updateContentDisplay();
+            } else if (panelTitle) {
+                panelTitle.textContent = 'この位置で有効なキー';
+            }
+        }
+
+        updateSearchMode();
+
+        // 検索欄でのキーバインド（オートコンプリート操作）— ここで処理したキーは伝播させない
+        searchInput.addEventListener('keydown', async (e) => {
+            // IME変換中（日本語・中国語等）は keydown でブロックしない。確定後の文字は input イベントでフィルタする
+            if (e.isComposing) return;
+
+            // 検索欄入力制限: スペースは常にブロック。1文字キーで修飾キーなしのとき、禁止文字はブロック。CAPS LOCK オンかつ Shift+数字/英字キー(e.code)のときのみフォールバックで挿入。
+            if (e.key === ' ') {
+                e.preventDefault();
+                return;
+            }
+            if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+                const fallbackChar = getSearchFallbackFromCode(e.code, e.shiftKey);
+                const capsLockOn = e.getModifierState('CapsLock');
+                if (capsLockOn && e.shiftKey && fallbackChar !== null) {
+                    e.preventDefault();
+                    insertAtCursor(searchInput, fallbackChar);
+                    return;
+                }
+                // 禁止文字（^ @ やその他記号・大文字）: ブロックのみ（挿入しない）
+                if (!isSearchCharAllowed(e.key)) {
+                    e.preventDefault();
+                }
+            }
+
+            const navMode = isNavigationMode();
+
+            // ナビモード時は予測パネルを非表示にする（ただし上下矢印のときは候補内移動のため非表示にしない）
+            if (navMode && e.key !== 'ArrowUp' && e.key !== 'ArrowDown') {
+                autocomplete.classList.remove('show');
+            }
+
+            // 検索欄が空のとき Backspace: 一つ上の階層へ戻る
+            if (e.key === 'Backspace' && searchInput.value.length === 0) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (currentPath.length > 0) {
+                    navigateToPath(currentPath.slice(0, -1));
+                }
+                return;
+            }
+
+            // ナビモード時 Backspace（検索欄に文字あり）: 末尾1文字削除し、検索バーに合わせて仮想キーボード状態を同期
+            if (e.key === 'Backspace' && navMode && searchInput.value.length > 0) {
+                e.preventDefault();
+                e.stopPropagation();
+                const newValue = searchInput.value.slice(0, -1);
+                searchInput.value = newValue;
+                if (searchSyncTimeout) { clearTimeout(searchSyncTimeout); searchSyncTimeout = null; }
+                navigateToPath(getLongestValidPath(newValue));
+                return;
+            }
+
+            // 検索欄で Ctrl+Alt+英数字: そのキーの設定ダイアログを開く
+            const searchMapKey = getMapKeyFromEvent(e);
+            if (e.ctrlKey && e.altKey && searchMapKey) {
+                e.preventDefault();
+                e.stopPropagation();
+                openBindDialog(searchMapKey);
+                return;
+            }
+            // ナビモード時のみ: 英数字1キーで階層移動。編集モード時はそのまま入力させる
+            if (navMode && !e.ctrlKey && !e.altKey && !e.metaKey && searchMapKey) {
+                e.preventDefault();
+                e.stopPropagation();
+                handleKeyPress(searchMapKey);
+                return;
+            }
+
+            // 上下矢印: 編集モードで候補が未表示のときは候補を出してから選択移動できるようにする（行端へ飛ばない）
+            if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && !navMode) {
+                if (!autocomplete.classList.contains('show') || lastAutocompleteResults.length === 0) {
+                    const query = searchInput.value;
+                    const items = getKeybindCandidatesFiltered(query);
+                    if (items && items.length > 0) {
+                        displayAutocomplete(items);
+                        const idx = e.key === 'ArrowDown' ? 0 : items.length - 1;
+                        setAutocompleteSelected(idx);
+                    }
+                    if (!e.isComposing) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                    }
+                    return;
+                }
+            }
+
+            if (!autocomplete.classList.contains('show') || lastAutocompleteResults.length === 0) return;
+            const items = autocomplete.querySelectorAll('.autocomplete-item');
+            if (items.length === 0) return;
+
+            // Tab=次候補 / Shift+Tab=前候補（矢印と同様に候補移動）
+            if (e.key === 'Tab') {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            if (e.key === 'ArrowDown' || (e.key === 'Tab' && !e.shiftKey)) {
+                if (!e.isComposing) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+                const newIndex = selectedIndex < 0 ? 0 : selectedIndex + 1;
+                setAutocompleteSelected(newIndex);
+                const sel = lastAutocompleteResults[newIndex];
+                if (sel && sel.type === 'node') {
+                    // 存在するノードの場合のみ検索バーに反映（フルパスで上書き＝編集モードで相対パスが貼られないようにする）
+                    const targetNode = getNode(sel.id);
+                    if (targetNode) {
+                        if (searchSyncTimeout) { clearTimeout(searchSyncTimeout); searchSyncTimeout = null; }
+                        searchInput.value = sel.id;
+                        const items = getKeybindCandidatesFiltered(searchInput.value);
+                        displayAutocomplete(items);
+                        const newSelectedIndex = items.findIndex(item => item.type === 'node' && item.id === sel.id);
+                        if (newSelectedIndex >= 0) {
+                            setAutocompleteSelected(newSelectedIndex);
+                        }
+                        applySearchResultToDisplay(sel);
+                    }
+                }
+                return;
+            }
+            if (e.key === 'ArrowUp' || (e.key === 'Tab' && e.shiftKey)) {
+                if (!e.isComposing) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+                const newIndex = selectedIndex < 0 ? (items.length - 1) : selectedIndex - 1;
+                setAutocompleteSelected(newIndex);
+                const sel = lastAutocompleteResults[newIndex];
+                if (sel && sel.type === 'node') {
+                    // 存在するノードの場合のみ検索バーに反映（フルパスで上書き＝編集モードで相対パスが貼られないようにする）
+                    const targetNode = getNode(sel.id);
+                    if (targetNode) {
+                        if (searchSyncTimeout) { clearTimeout(searchSyncTimeout); searchSyncTimeout = null; }
+                        searchInput.value = sel.id;
+                        const items = getKeybindCandidatesFiltered(searchInput.value);
+                        displayAutocomplete(items);
+                        const newSelectedIndex = items.findIndex(item => item.type === 'node' && item.id === sel.id);
+                        if (newSelectedIndex >= 0) {
+                            setAutocompleteSelected(newSelectedIndex);
+                        }
+                        applySearchResultToDisplay(sel);
+                    }
+                }
+                return;
+            }
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                // 編集モード: 候補を選択していない状態では確定しない（予測のどれかを選んでからEnter）
+                if (selectedIndex < 0) return;
+                const sel = lastAutocompleteResults[selectedIndex];
+                if (sel) {
+                    if (sel.type === 'command') {
+                        if (typeof sel.action === 'function') sel.action();
+                        searchInput.value = '';
+                        autocomplete.classList.remove('show');
+                        return;
+                    }
+                    // ノードの場合、存在チェックを行い、存在する場合のみ移動（ツリー構造を維持）
+                    if (sel.type === 'node') {
+                        const targetNode = getNode(sel.id);
+                        if (!targetNode) {
+                            // ノードが存在しない場合はエラー表示
+                            alert(`エラー: パス "${sel.id}" は存在しません。ツリー構造を維持するため、設定されているノードのみ移動できます。`);
+                            return;
+                        }
+                        const textToPaste = (sel.navLabel && String(sel.navLabel).trim() !== '') ? sel.navLabel : '';
+                        // ナビモード時のみ Enter で貼り付け。編集モードでは Enter は予測の決定のみ（貼り付けしない）
+                        if (navMode && pasteTargetKey) {
+                            const targetPath = currentPath + pasteTargetKey;
+                            const existing = getNode(targetPath);
+                            (async () => {
+                                try {
+                                    await apiCall(`/nodes/${encodeURIComponent(targetPath)}`, {
+                                        method: 'POST',
+                                        body: JSON.stringify({ navLabel: textToPaste, content: existing?.content || '' })
+                                    });
+                                    await loadTree();
+                                    pasteTargetKey = null;
+                                } catch (err) {
+                                    console.error('貼り付けエラー:', err);
+                                    alert('貼り付けに失敗しました');
+                                }
+                            })();
+                            searchInput.value = '';
+                            autocomplete.classList.remove('show');
+                        } else {
+                            // 予測変換確定時に追記されないよう、確定前に検索欄を選択値で置換する
+                            if (searchSyncTimeout) { clearTimeout(searchSyncTimeout); searchSyncTimeout = null; }
+                            searchInput.value = sel.id;
+                            await navigateToPath(sel.id);
+                            autocomplete.classList.remove('show');
+                        }
+                    }
+                }
+                return;
+            }
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                e.stopPropagation();
+                autocomplete.classList.remove('show');
+            }
+        });
+        }
+
+        // ダイアログ・内容欄: Ctrl+Enter で保存（伝播させず競合防止）
+        const bindContentInputEl = document.getElementById('bindContentInput');
+        if (bindContentInputEl) {
+            bindContentInputEl.addEventListener('keydown', (e) => {
+                // IME変換中（日本語・中国語等）は keydown でブロックしない。確定後の文字は input イベントでフィルタする
+                if (e.isComposing) return;
+                if (e.key === 'Enter' && e.ctrlKey) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    saveBind();
+                }
+                if ((e.ctrlKey && e.shiftKey && e.key === 'N') || (e.ctrlKey && e.shiftKey && e.key === 'C')) {
+                    e.stopPropagation();
+                }
+            });
+        }
+
+        // ダイアログ・ラベル欄: Ctrl+Enter で保存（伝播させず競合防止）
+        const bindNavLabelInputEl = document.getElementById('bindNavLabelInput');
+        if (bindNavLabelInputEl) {
+            bindNavLabelInputEl.addEventListener('keydown', (e) => {
+                if (e.isComposing) return;
+                if (e.key === 'Enter' && e.ctrlKey) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    saveBind();
+                }
+                if ((e.ctrlKey && e.shiftKey && e.key === 'N') || (e.ctrlKey && e.shiftKey && e.key === 'C')) {
+                    e.stopPropagation();
+                }
+            });
+        }
+
+        // 入力欄・テキストエリアかどうか
+        function isFormFocused() {
+            const el = document.activeElement;
+            return el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA');
+        }
+
+        // 英数字1文字か（マップ用。操作キーバインドには使わない）
+        // ASCII文字の英字（大文字小文字区別なし）+ 数字のみ
+        function isMapKey(key) {
+            if (key.length !== 1) return false;
+            const code = key.toUpperCase().charCodeAt(0);
+            // 48-57: 数字 (0-9), 65-90: 英字 (A-Z)
+            return (code >= 48 && code <= 57) || (code >= 65 && code <= 90);
+        }
+
+        // キーイベントからマップキー文字を取得（現在レイアウトの codeToCharMap 優先、なければ従来フォールバック）
+        function getMapKeyFromEvent(e) {
+            const layout = KEYBOARD_LAYOUTS.find(l => l.id === inputMode);
+            if (layout && layout.codeToCharMap && e.code && layout.codeToCharMap[e.code] != null) {
+                const ch = layout.codeToCharMap[e.code];
+                return (typeof ch === 'string' && ch.length === 1) ? ch.toLowerCase() : null;
+            }
+            // 従来フォールバック
+            if (inputMode === 'tenkey') {
+                if (e.key >= '0' && e.key <= '9') return e.key;
+                if (e.key && e.key.startsWith('Numpad') && e.key.length === 7) {
+                    const n = e.key.replace('Numpad', '');
+                    if (n >= '0' && n <= '9') return n;
+                }
+                return null;
+            }
+            if (isMapKey(e.key)) return e.key.toLowerCase();
+            return null;
+        }
+
+        // スクロール可能要素で矢印・PageUp/PageDown を処理（キーバインドではなく標準のスクロール操作）
+        function handleScrollKey(el, e) {
+            if (!el) return false;
+            const key = e.key;
+            const line = 48;
+            const page = Math.max(100, (el.clientHeight || 400) - 40);
+            if (key === 'ArrowDown') {
+                el.scrollTop = Math.min(el.scrollHeight - el.clientHeight, el.scrollTop + line);
+                return true;
+            }
+            if (key === 'ArrowUp') {
+                el.scrollTop = Math.max(0, el.scrollTop - line);
+                return true;
+            }
+            if (key === 'PageDown') {
+                el.scrollTop = Math.min(el.scrollHeight - el.clientHeight, el.scrollTop + page);
+                return true;
+            }
+            if (key === 'PageUp') {
+                el.scrollTop = Math.max(0, el.scrollTop - page);
+                return true;
+            }
+            return false;
+        }
+
+        // 全操作をキーバインドで（英数字以外: Ctrl/Alt/Backspace/Fキー等）
+        document.addEventListener('keydown', async (e) => {
+            const bindDialogEl = document.getElementById('bindDialog');
+            const dialogOpen = bindDialogEl ? bindDialogEl.classList.contains('show') : false;
+
+            // F1〜F6 ショートカット（ヘルプ/エクスポート/インポート/テンキー/言語/モード）
+            if (e.key === 'F1') {
+                e.preventDefault();
+                openHelpModal();
+                return;
+            }
+            if (e.key === 'F2') {
+                e.preventDefault();
+                doExport();
+                return;
+            }
+            if (e.key === 'F3') {
+                e.preventDefault();
+                doImport();
+                return;
+            }
+            if (e.key === 'F4') {
+                e.preventDefault();
+                openTenkeySettingsModal();
+                return;
+            }
+            if (e.key === 'F5') {
+                e.preventDefault();
+                openSettingModal();
+                return;
+            }
+            if (e.key === 'F6') {
+                e.preventDefault();
+                openModeModal();
+                return;
+            }
+
+            // Escape: ヘルプモーダル／テンキー設定モーダル／設定モーダル／モードモーダル／設定ダイアログを閉じる
+            if (e.key === 'Escape') {
+                const tenkeyOverlay = document.getElementById('tenkeyModalOverlay');
+                const settingOverlay = document.getElementById('settingModalOverlay');
+                const modeOverlay = document.getElementById('modeModalOverlay');
+                const helpOverlay = document.getElementById('helpModalOverlay');
+                const tenkeyOpen = tenkeyOverlay ? tenkeyOverlay.classList.contains('show') : false;
+                const settingOpen = settingOverlay ? settingOverlay.classList.contains('show') : false;
+                const modeOpen = modeOverlay ? modeOverlay.classList.contains('show') : false;
+                const helpOpen = helpOverlay ? helpOverlay.classList.contains('show') : false;
+                if (tenkeyOpen) {
+                    closeTenkeySettingsModal();
+                    e.preventDefault();
+                } else if (settingOpen) {
+                    closeSettingModal();
+                    e.preventDefault();
+                } else if (modeOpen) {
+                    closeModeModal();
+                    e.preventDefault();
+                } else if (helpOpen) {
+                    closeHelpModal();
+                    e.preventDefault();
+                } else if (dialogOpen) {
+                    closeBindDialog();
+                    e.preventDefault();
+                }
+                return;
+            }
+
+            // モーダル表示中: 矢印・PageUp/PageDown でスクロール（キーバインドではなく標準のスクロール操作）
+            const helpOverlayScroll = document.getElementById('helpModalOverlay');
+            const helpOpenScroll = helpOverlayScroll ? helpOverlayScroll.classList.contains('show') : false;
+            if (helpOpenScroll && (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'PageUp' || e.key === 'PageDown')) {
+                const helpModalEl = document.getElementById('helpModal');
+                if (helpModalEl && handleScrollKey(helpModalEl, e)) {
+                    if (!e.isComposing) e.preventDefault();
+                    return;
+                }
+            }
+            const settingOverlayScroll = document.getElementById('settingModalOverlay');
+            const settingOpenScroll = settingOverlayScroll ? settingOverlayScroll.classList.contains('show') : false;
+            if (settingOpenScroll && (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'PageUp' || e.key === 'PageDown')) {
+                const settingModalEl = document.getElementById('settingModal');
+                if (settingModalEl && handleScrollKey(settingModalEl, e)) {
+                    if (!e.isComposing) e.preventDefault();
+                    return;
+                }
+            }
+            const modeOverlayScroll = document.getElementById('modeModalOverlay');
+            const modeOpenScroll = modeOverlayScroll ? modeOverlayScroll.classList.contains('show') : false;
+            if (modeOpenScroll && (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'PageUp' || e.key === 'PageDown')) {
+                const modeModalEl = document.getElementById('modeModal');
+                if (modeModalEl && handleScrollKey(modeModalEl, e)) {
+                    if (!e.isComposing) e.preventDefault();
+                    return;
+                }
+            }
+
+            // キーボード設定モーダル表示中: 左右矢印でレジストリ切り替え、上下・PageUp/PageDownでスクロール、Enterで閉じる
+            const tenkeyOverlayCheck = document.getElementById('tenkeyModalOverlay');
+            const tenkeyOpen = tenkeyOverlayCheck ? tenkeyOverlayCheck.classList.contains('show') : false;
+            if (tenkeyOpen) {
+                if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'PageUp' || e.key === 'PageDown') {
+                    const tenkeyModalEl = document.getElementById('tenkeyModal');
+                    if (tenkeyModalEl && handleScrollKey(tenkeyModalEl, e)) {
+                        if (!e.isComposing) e.preventDefault();
+                        return;
+                    }
+                }
+                if (e.key === 'ArrowLeft') {
+                    e.preventDefault();
+                    const layoutIndex = KEYBOARD_LAYOUTS.findIndex(l => l.id === inputMode);
+                    const newIndex = layoutIndex <= 0 ? KEYBOARD_LAYOUTS.length - 1 : layoutIndex - 1;
+                    setInputMode(KEYBOARD_LAYOUTS[newIndex].id);
+                    return;
+                }
+                if (e.key === 'ArrowRight') {
+                    e.preventDefault();
+                    const layoutIndex = KEYBOARD_LAYOUTS.findIndex(l => l.id === inputMode);
+                    const newIndex = layoutIndex < 0 || layoutIndex >= KEYBOARD_LAYOUTS.length - 1 ? 0 : layoutIndex + 1;
+                    setInputMode(KEYBOARD_LAYOUTS[newIndex].id);
+                    return;
+                }
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    closeTenkeySettingsModal();
+                    return;
+                }
+            }
+
+            // ダイアログ表示中: Ctrl+S のみここで保存（それ以外は入力欄の入力に任せる）
+            if (dialogOpen) {
+                if (e.ctrlKey && e.key === 's') {
+                    e.preventDefault();
+                    saveBind();
+                    return;
+                }
+                // ダイアログ内の入力欄にフォーカスがある場合は、そのまま入力可能にする（return しない）
+                const active = document.activeElement;
+                if (active && (active.id === 'bindNavLabelInput' || active.id === 'bindContentInput')) {
+                    return;
+                }
+            }
+
+            // 入力欄にフォーカスがあるときは、操作キーのみ処理（マップキーは入力に任せる）
+            if (isFormFocused()) {
+                if (e.ctrlKey && e.key === 'k') {
+                    e.preventDefault();
+                    const si = document.getElementById('searchInput');
+                    if (si) si.focus();
+                }
+                // 検索バーにフォーカス時のみ: Ctrl+Enter で現在の階層の追加編集（ダイアログを開く）
+                const searchInput = document.getElementById('searchInput');
+                if (searchInput && document.activeElement === searchInput && e.ctrlKey && e.key === 'Enter') {
+                    e.preventDefault();
+                    const current = getNode(currentPath);
+                    const keyNameEl = document.getElementById('bindKeyName');
+                    const currentPathEl = document.getElementById('bindCurrentPath');
+                    const navLabelInputEl = document.getElementById('bindNavLabelInput');
+                    const contentInputEl = document.getElementById('bindContentInput');
+                    const dialogEl = document.getElementById('bindDialog');
+                    if (keyNameEl) keyNameEl.textContent = '[現在の階層]';
+                    if (currentPathEl) currentPathEl.textContent = currentPath || '';
+                    if (navLabelInputEl) navLabelInputEl.value = current.navLabel || '';
+                    if (contentInputEl) contentInputEl.value = current.content || '';
+                    if (dialogEl) {
+                        dialogEl.setAttribute('data-target-path', currentPath);
+                        dialogEl.classList.add('show');
+                    }
+                    if (contentInputEl) contentInputEl.focus();
+                    return;
+                }
+                // Ctrl+Cは入力欄内でのコピーを優先
+                return;
+            }
+
+            // Ctrl+C: 現在の設定文字列をクリップボードにコピー（フォームにフォーカスがない場合）
+            if (e.ctrlKey && e.key === 'c' && !e.shiftKey && !e.altKey) {
+                const contentEl = document.getElementById('panelContentNav');
+                if (!contentEl) return;
+                const content = contentEl.getAttribute('data-content');
+                if (content) {
+                    e.preventDefault();
+                    const success = await copyAndPasteToPreviousWindow(content);
+                    showCopyFeedback(contentEl, success);
+                }
+                return;
+            }
+
+            // ----- 以下はフォーカスがフォーム外のとき -----
+
+            // Ctrl+Alt+英数字: そのキーの設定ダイアログを開く
+            const docMapKey = getMapKeyFromEvent(e);
+            if (e.ctrlKey && e.altKey && docMapKey) {
+                e.preventDefault();
+                openBindDialog(docMapKey);
+                return;
+            }
+
+            // Alt+英数字: 貼り付け先キーを選択（同じキーで解除）
+            if (e.altKey && !e.ctrlKey && docMapKey) {
+                e.preventDefault();
+                pasteTargetKey = pasteTargetKey === docMapKey ? null : docMapKey;
+                updateKeyboardLayout();
+                return;
+            }
+
+            // Ctrl+K: 検索にフォーカス
+            if (e.ctrlKey && e.key === 'k') {
+                e.preventDefault();
+                const si = document.getElementById('searchInput');
+                if (si) si.focus();
+                return;
+            }
+
+            // Backspace または Alt+Left: 一つ上の階層へ戻る（検索欄にフォーカスがあるときは除外＝1文字だけ削除させる）
+            if (e.key === 'Backspace' || (e.altKey && e.key === 'ArrowLeft')) {
+                if (searchInput && document.activeElement === searchInput) return;
+                e.preventDefault();
+                if (currentPath.length > 0) {
+                    navigateToPath(currentPath.slice(0, -1));
+                }
+                return;
+            }
+
+            // Ctrl+Shift+N: 現在の階層のナビラベルのみ編集（ダイアログを開く）
+            if (e.ctrlKey && e.shiftKey && e.key === 'N') {
+                e.preventDefault();
+                const current = getNode(currentPath);
+                const keyNameEl = document.getElementById('bindKeyName');
+                const currentPathEl = document.getElementById('bindCurrentPath');
+                const navLabelInputEl = document.getElementById('bindNavLabelInput');
+                const contentInputEl = document.getElementById('bindContentInput');
+                const dialogEl = document.getElementById('bindDialog');
+                if (keyNameEl) keyNameEl.textContent = '[現在の階層]';
+                if (currentPathEl) currentPathEl.textContent = currentPath || '';
+                if (navLabelInputEl) navLabelInputEl.value = current.navLabel || '';
+                if (contentInputEl) contentInputEl.value = current.content || '';
+                if (dialogEl) {
+                    dialogEl.setAttribute('data-target-path', currentPath);
+                    dialogEl.classList.add('show');
+                }
+                if (navLabelInputEl) { navLabelInputEl.focus(); navLabelInputEl.select(); }
+                return;
+            }
+
+            // Ctrl+Shift+C: 現在の階層の設定文字列のみ編集（ダイアログを開く）
+            if (e.ctrlKey && e.shiftKey && e.key === 'C') {
+                e.preventDefault();
+                const current = getNode(currentPath);
+                const keyNameEl = document.getElementById('bindKeyName');
+                const currentPathEl = document.getElementById('bindCurrentPath');
+                const navLabelInputEl = document.getElementById('bindNavLabelInput');
+                const contentInputEl = document.getElementById('bindContentInput');
+                const dialogEl = document.getElementById('bindDialog');
+                if (keyNameEl) keyNameEl.textContent = '[現在の階層]';
+                if (currentPathEl) currentPathEl.textContent = currentPath || '';
+                if (navLabelInputEl) navLabelInputEl.value = current.navLabel || '';
+                if (contentInputEl) contentInputEl.value = current.content || '';
+                if (dialogEl) {
+                    dialogEl.setAttribute('data-target-path', currentPath);
+                    dialogEl.classList.add('show');
+                }
+                if (contentInputEl) { contentInputEl.focus(); contentInputEl.select(); }
+                return;
+            }
+
+            // Ctrl+Enter: 現在の階層のラベル・内容を編集（ダイアログを開く）
+            if (e.ctrlKey && e.key === 'Enter') {
+                e.preventDefault();
+                const current = getNode(currentPath);
+                const keyNameEl = document.getElementById('bindKeyName');
+                const currentPathEl = document.getElementById('bindCurrentPath');
+                const navLabelInputEl = document.getElementById('bindNavLabelInput');
+                const contentInputEl = document.getElementById('bindContentInput');
+                const dialogEl = document.getElementById('bindDialog');
+                if (keyNameEl) keyNameEl.textContent = '[現在の階層]';
+                if (currentPathEl) currentPathEl.textContent = currentPath || '';
+                if (navLabelInputEl) navLabelInputEl.value = current.navLabel || '';
+                if (contentInputEl) contentInputEl.value = current.content || '';
+                if (dialogEl) {
+                    dialogEl.setAttribute('data-target-path', currentPath);
+                    dialogEl.classList.add('show');
+                }
+                if (contentInputEl) contentInputEl.focus();
+                return;
+            }
+
+            // 英数字のみ: マップナビゲーション（クリックと同じ）
+            const navMapKey = getMapKeyFromEvent(e);
+            if (!e.ctrlKey && !e.altKey && !e.metaKey && navMapKey) {
+                e.preventDefault();
+                handleKeyPress(navMapKey);
+            }
+        });
+
+        // 設定文字列のクリック: クリップボードにコピー（パネル内 panelContentNav）
+        const panelContentNavEl = document.getElementById('panelContentNav');
+        if (panelContentNavEl) {
+            panelContentNavEl.addEventListener('click', async (e) => {
+                const contentEl = e.currentTarget;
+                const content = contentEl.getAttribute('data-content');
+                if (content) {
+                    const success = await copyAndPasteToPreviousWindow(content);
+                    showCopyFeedback(contentEl, success);
+                }
+            });
+
+            panelContentNavEl.addEventListener('keydown', async (e) => {
+                const contentEl = e.currentTarget;
+                if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'PageUp' || e.key === 'PageDown') {
+                    if (handleScrollKey(contentEl, e)) { if (!e.isComposing) e.preventDefault(); }
+                    return;
+                }
+                if (e.key !== 'Enter' && e.key !== ' ') return;
+                const content = contentEl.getAttribute('data-content');
+                if (!content) return;
+                e.preventDefault();
+                const success = await copyAndPasteToPreviousWindow(content);
+                showCopyFeedback(contentEl, success);
+            });
+
+            panelContentNavEl.addEventListener('dblclick', () => { openBindDialogForCurrentPath(); });
+        }
+
+        // 初期化（DOMContentLoadedイベントで実行）
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                loadTree();
+            });
+        } else {
+            // DOMが既に読み込まれている場合は即座に実行
+            loadTree();
+        }
+    </script>
+</body>
+</html>
+

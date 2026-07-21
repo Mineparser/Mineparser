@@ -1,0 +1,14 @@
+{
+  "name": "tuari_mineparser",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "tauri": "tauri",
+    "test": "node --test test/*.test.mjs",
+    "benchmark": "node test/benchmark.mjs"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2"
+  }
+}
