@@ -2471,8 +2471,10 @@
             const section = document.getElementById('keyboardSection');
             const keyboard = document.getElementById('keyboardContainer');
             if (!section || !keyboard) return;
-            const available = Math.max(280, section.clientWidth - 8);
-            const keySize = Math.max(34, Math.min(72, (available - 28) / 10));
+            const keyboardMaxWidth = 637;
+            const available = Math.max(280, Math.min(keyboardMaxWidth, section.clientWidth) - 8);
+            // Ten keys plus nine gaps must fit inside the keyboard surface.
+            const keySize = Math.max(34, Math.min(61, (available - 18) / 10));
             keyboard.style.setProperty('--key-size', `${keySize}px`);
             keyboard.style.setProperty('--keyboard-width', `${Math.min(637, keySize * 10 + 28)}px`);
         }
