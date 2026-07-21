@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'%3E%3C/svg%3E" type="image/svg+xml">
-    <title>mineparser 階層管理システム</title>
+    <title>Mineparser — Prompt and command launcher</title>
     <style>
         * {
             margin: 0;
@@ -1223,7 +1223,7 @@
     </style>
 </head>
 <body>
-    <button class="launcher-marker" id="launcherMarker" aria-label="Mineparserを開く" title="Mineparserを開く">◆</button>
+    <button class="launcher-marker" id="launcherMarker" aria-label="Open Mineparser" title="Open Mineparser">◆</button>
     <div class="container">
         <div class="app-toolbar">
             <button type="button" class="collapse-app-btn" id="collapseAppButton">Collapse</button>
@@ -1235,33 +1235,34 @@
             <div class="search-section">
                 <div class="search-label" style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
                     <span id="searchModeBadge" class="search-mode-badge" data-mode="nav" aria-live="polite">Nav</span>
-                    <div class="fkey-row" role="group" aria-label="Fキーショートカット">
+                    <div class="fkey-row" role="group" aria-label="Function key shortcuts">
                         <button type="button" id="keybindHelpHint" class="fkey-btn fkey-btn-help" data-f="1" tabindex="0" aria-label="Show help (F1)" title="Help (F1)">Help (F1)</button>
                         <button type="button" class="fkey-btn fkey-btn-export" data-f="2" tabindex="0" aria-label="Export (F2)" title="Export (F2)">Export (F2)</button>
                         <label for="importFileInput" class="fkey-btn fkey-btn-import" data-f="3" tabindex="0" aria-label="Import (F3)" title="Import (F3)" role="button">Import (F3)</label>
                         <button type="button" class="fkey-btn fkey-btn-tenkey" data-f="4" tabindex="0" aria-label="Keyboard (F4)" title="Keyboard (F4)">F4 Keyboard(F4)</button>
                         <button type="button" class="fkey-btn fkey-btn-setting" data-f="5" tabindex="0" aria-label="Setting (F5)" title="Setting (F5)">Setting (F5)</button>
-                        <button type="button" class="fkey-btn fkey-btn-mode" data-f="6" tabindex="0" aria-label="Mode (F6) モード選択" title="Mode (F6) モード選択">Mode (F6)</button>
+                        <button type="button" class="fkey-btn fkey-btn-mode" data-f="6" tabindex="0" aria-label="Mode (F6)" title="Mode (F6)">Mode (F6)</button>
                     </div>
                     <!-- ファイル選択は display:none だと一部環境でダイアログが開かないため、視覚的に隠す -->
                     <input type="file" id="importFileInput" accept=".json" class="visually-hidden-file-input" aria-hidden="true" tabindex="-1">
                 </div>
                 <div class="search-bar" data-mode="nav">
-                    <input type="text" class="search-input" placeholder="Search..." id="searchInput">
+                    <input type="text" class="search-input" placeholder="Type to search or navigate..." id="searchInput">
                 </div>
+                <div class="search-label" style="margin-top:5px;">Try typing a keyword, or press a mapped key to navigate.</div>
                 <div id="keyFeedback" aria-live="polite"></div>
-                <div id="breadcrumbNav" style="display: none;" aria-label="階層パンくず"></div>
+                <div id="breadcrumbNav" style="display: none;" aria-label="Breadcrumb navigation"></div>
             </div>
             <div class="keyboard-section" id="keyboardSection" data-mode="qwerty">
                 <div class="keyboard" id="keyboardContainer"></div>
             </div>
             </div>
             <div class="autocomplete-panel" id="autocompletePanel">
-                <div class="panel-content-nav" id="panelContentNav" tabindex="0" role="button" aria-label="設定文字列をクリップボードにコピー">
+                <div class="panel-content-nav" id="panelContentNav" tabindex="0" role="button" aria-label="Copy saved text to clipboard">
                     <div class="panel-nav-label" id="panelNavLabel">Nav:</div>
                     <div class="panel-content-string" id="panelContentString"></div>
                 </div>
-                <div class="autocomplete-panel-title" id="autocomplete-panel-title">キーバインド候補</div>
+                <div class="autocomplete-panel-title" id="autocomplete-panel-title">Suggestions</div>
                 <div class="autocomplete-dropdown" id="autocomplete"></div>
             </div>
         </div>
@@ -1269,90 +1270,90 @@
         <!-- ヘルプモーダル（F1で開く・Escape/閉じる/オーバーレイクリックで閉じる） -->
         <div class="help-modal-overlay" id="helpModalOverlay" aria-hidden="true">
             <div class="help-modal" id="helpModal" role="dialog" aria-labelledby="helpModalTitle" aria-modal="true">
-                <div class="help-modal-title" id="helpModalTitle">キーボードショートカット（英数字キーはマップ用のため、以下で操作）</div>
+                <div class="help-modal-title" id="helpModalTitle">Keyboard shortcuts</div>
                 <div class="help-modal-body">
                     <div class="keybind-help-layer-desc" style="margin-bottom:14px; padding:10px; background:#2d2d30; border-radius:4px;">
-                        <strong>1層目（カテゴリ）</strong> — キーに割り当てる大分類（例: 言語・ツール・定型文）。最上位で表示されるキーが1層目。<br>
-                        <strong>2層目（項目）</strong> — カテゴリ内の個別項目。ここに「設定文字列」を割り当て、Enterで返す内容を設定する。
+                        <strong>Level 1 (category)</strong> — A top-level group such as tools, languages, or templates.<br>
+                        <strong>Level 2 (item)</strong> — A reusable prompt or command returned when selected.
                     </div>
 
-                    <div class="help-section">Fキー</div>
-                    <div id="helpLineShortcut"><kbd>F1</kbd> ヘルプの表示/非表示</div>
-                    <div><kbd>F2</kbd> エクスポート（JSON）</div>
-                    <div><kbd>F3</kbd> インポート（JSON）</div>
-                    <div><kbd>F4</kbd> キーボード配列の切り替え</div>
-                    <div><kbd>F5</kbd> 設定</div>
-                    <div><kbd>F6</kbd> コピー／貼り付け動作モードを選択</div>
+                    <div class="help-section">Function keys</div>
+                    <div id="helpLineShortcut"><kbd>F1</kbd> Toggle help</div>
+                    <div><kbd>F2</kbd> Export JSON</div>
+                    <div><kbd>F3</kbd> Import JSON</div>
+                    <div><kbd>F4</kbd> Change keyboard layout</div>
+                    <div><kbd>F5</kbd> Open settings</div>
+                    <div><kbd>F6</kbd> Choose copy/paste mode</div>
 
-                    <div class="help-section">検索・補完</div>
-                    <div><kbd>Ctrl</kbd>+<kbd>K</kbd> 検索にフォーカス</div>
-                    <div><kbd>Tab</kbd>/<kbd>Shift+Tab</kbd> または <kbd>↑</kbd><kbd>↓</kbd> 補完候補の選択 / <kbd>Enter</kbd> 確定 / <kbd>Escape</kbd> 補完を閉じる</div>
+                    <div class="help-section">Search</div>
+                    <div><kbd>Ctrl</kbd>+<kbd>K</kbd> Focus search</div>
+                    <div><kbd>Tab</kbd>/<kbd>Shift+Tab</kbd> or <kbd>↑</kbd><kbd>↓</kbd> Move suggestions / <kbd>Enter</kbd> Select / <kbd>Escape</kbd> Close</div>
 
-                    <div class="help-section">ナビゲーション</div>
-                    <div><kbd>Backspace</kbd> / <kbd>Alt</kbd>+<kbd>←</kbd> 一つ上の階層へ戻る</div>
-                    <div>英数字キー（マップキー）で階層を移動（キーボード上のキーに対応）</div>
+                    <div class="help-section">Navigation</div>
+                    <div><kbd>Backspace</kbd> / <kbd>Alt</kbd>+<kbd>←</kbd> Go up one level</div>
+                    <div>Use mapped alphanumeric keys to navigate.</div>
 
                     <div class="help-section">キーバインド（貼り付け・設定）</div>
                     <div id="helpLineAltKey"><kbd>Alt</kbd>+<kbd>英数字キー</kbd> 貼り付け先キーを選択（キーボード上でハイライト）→ 検索で項目を選び <kbd>Enter</kbd> でそのキーに文字列を貼り付け</div>
                     <div id="helpLineCtrlAltKey"><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>英数字キー</kbd> そのキーの設定ダイアログを開く</div>
                     <div>未設定キーは「<kbd>Ctrl</kbd>+<kbd>Enter</kbd>」で設定ダイアログを開く（キーボード上のキーをクリックでも可）</div>
 
-                    <div class="help-section">コピー（設定文字列を使う）</div>
-                    <div><kbd>Ctrl</kbd>+<kbd>C</kbd> 現在の設定文字列をクリップボードにコピー</div>
-                    <div>設定文字列欄をクリック / <kbd>Enter</kbd> / <kbd>Space</kbd> でもクリップボードにコピー</div>
+                    <div class="help-section">Copy</div>
+                    <div><kbd>Ctrl</kbd>+<kbd>C</kbd> Copy the current saved text</div>
+                    <div>Click the text panel, press <kbd>Enter</kbd>, or press <kbd>Space</kbd> to copy.</div>
 
-                    <div class="help-section">編集（現在の階層）</div>
-                    <div><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>N</kbd> 現在の階層を編集（ダイアログを開きナビラベル欄にフォーカス）</div>
-                    <div><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>C</kbd> 現在の階層を編集（ダイアログを開き設定文字列欄にフォーカス）</div>
-                    <div><kbd>Ctrl</kbd>+<kbd>Enter</kbd> 現在の階層のラベル・内容を編集（ダイアログを開く）</div>
-                    <div>設定文字列欄をダブルクリックでも編集ダイアログを開く</div>
+                    <div class="help-section">Editing</div>
+                    <div><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>N</kbd> Edit the current label</div>
+                    <div><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>C</kbd> Edit the current saved text</div>
+                    <div><kbd>Ctrl</kbd>+<kbd>Enter</kbd> Edit the current label and text</div>
+                    <div>Double-click the text panel to edit.</div>
 
-                    <div class="help-section">ダイアログ内</div>
-                    <div><kbd>Ctrl</kbd>+<kbd>S</kbd> / <kbd>Ctrl</kbd>+<kbd>Enter</kbd> 設定を保存</div>
-                    <div><kbd>Escape</kbd> ダイアログ・補完・ヘルプ・キーボード設定・設定モーダルを閉じる</div>
+                    <div class="help-section">Dialogs</div>
+                    <div><kbd>Ctrl</kbd>+<kbd>S</kbd> / <kbd>Ctrl</kbd>+<kbd>Enter</kbd> Save</div>
+                    <div><kbd>Escape</kbd> Close the current dialog or collapse the app</div>
 
-                    <div class="help-section">キーボード設定モーダル（F4表示中）</div>
-                    <div><kbd>←</kbd><kbd>↑</kbd> 前の配列 / <kbd>→</kbd><kbd>↓</kbd> 次の配列 / <kbd>Enter</kbd> 確定して閉じる</div>
+                    <div class="help-section">Keyboard layout dialog</div>
+                    <div><kbd>←</kbd><kbd>↑</kbd> Previous / <kbd>→</kbd><kbd>↓</kbd> Next / <kbd>Enter</kbd> Select and close</div>
                 </div>
-                <button type="button" class="help-modal-close" id="helpModalClose">閉じる</button>
+                <button type="button" class="help-modal-close" id="helpModalClose">Close</button>
             </div>
         </div>
 
         <!-- テンキー設定モーダル（F4で表示・QWERTY/Numpadの選択） -->
         <div class="tenkey-modal-overlay" id="tenkeyModalOverlay" aria-hidden="true">
             <div class="tenkey-modal" id="tenkeyModal" role="dialog" aria-labelledby="tenkeyModalTitle" aria-modal="true">
-                <div class="tenkey-modal-title" id="tenkeyModalTitle">キーボード設定</div>
+                <div class="tenkey-modal-title" id="tenkeyModalTitle">Keyboard layout</div>
                 <div class="tenkey-modal-choices" id="tenkeyModalChoices"></div>
-                <button type="button" class="tenkey-modal-close" id="tenkeyModalClose">閉じる</button>
+                <button type="button" class="tenkey-modal-close" id="tenkeyModalClose">Close</button>
             </div>
         </div>
 
         <!-- 設定モーダル（F5で表示） -->
         <div class="setting-modal-overlay" id="settingModalOverlay" aria-hidden="true">
             <div class="setting-modal" id="settingModal" role="dialog" aria-labelledby="settingModalTitle" aria-modal="true">
-                <div class="setting-modal-title" id="settingModalTitle">設定</div>
+                <div class="setting-modal-title" id="settingModalTitle">Settings</div>
                 <div class="setting-modal-body">
                     <div class="setting-row">
-                        <label for="settingLanguage">言語</label>
+                        <label for="settingLanguage">Language</label>
                         <select id="settingLanguage" aria-label="言語を選択">
-                            <option value="ja">日本語</option>
+                            <option value="en">English</option>
                             <option value="en">English</option>
                         </select>
                     </div>
                 </div>
-                <button type="button" class="setting-modal-close" id="settingModalClose">閉じる</button>
+                <button type="button" class="setting-modal-close" id="settingModalClose">Close</button>
             </div>
         </div>
 
         <!-- モードモーダル（F6で表示） -->
         <div class="mode-modal-overlay" id="modeModalOverlay" aria-hidden="true">
             <div class="mode-modal" id="modeModal" role="dialog" aria-labelledby="modeModalTitle" aria-modal="true">
-                <div class="mode-modal-title" id="modeModalTitle">モード</div>
+                <div class="mode-modal-title" id="modeModalTitle">Mode</div>
                 <div class="mode-modal-body">
-                    <label class="mode-choice"><input type="radio" name="pasteMode" value="copy"><span><strong>コピーのみ</strong><small>設定文字列をクリップボードへコピーします。</small></span></label>
-                    <label class="mode-choice"><input type="radio" name="pasteMode" value="copy-paste"><span><strong>元のカーソル位置へ貼り付け</strong><small>コピー後、呼び出し前のアプリへ戻って自動貼り付けします。</small></span></label>
+                    <label class="mode-choice"><input type="radio" name="pasteMode" value="copy"><span><strong>Copy only</strong><small>Copy saved text to the clipboard.</small></span></label>
+                    <label class="mode-choice"><input type="radio" name="pasteMode" value="copy-paste"><span><strong>Paste to previous app</strong><small>Return to the previous app and paste automatically.</small></span></label>
                 </div>
-                <button type="button" class="mode-modal-close" id="modeModalClose">閉じる</button>
+                <button type="button" class="mode-modal-close" id="modeModalClose">Close</button>
             </div>
         </div>
     </div>
@@ -1360,23 +1361,23 @@
     <!-- キーバインド設定ダイアログ（全画面・ヘッダーにタイトルとボタン） -->
     <div class="bind-dialog" id="bindDialog">
         <div class="bind-dialog-header">
-            <div class="bind-dialog-title">キーバインド設定</div>
+            <div class="bind-dialog-title">Edit item</div>
             <div class="bind-dialog-buttons">
-                <button class="bind-dialog-button secondary" onclick="closeBindDialog()">キャンセル</button>
-                <button class="bind-dialog-button primary" onclick="saveBind()">設定</button>
+                <button class="bind-dialog-button secondary" onclick="closeBindDialog()">Cancel</button>
+                <button class="bind-dialog-button primary" onclick="saveBind()">Save</button>
             </div>
         </div>
         <div class="bind-dialog-body">
-            <div class="bind-dialog-desc" style="margin-bottom:14px; font-size:14px; color:#b0b0b0; line-height:1.45;">この階層のナビ表示名と設定文字列を、このダイアログで編集・設定します。</div>
+            <div class="bind-dialog-desc" style="margin-bottom:14px; font-size:14px; color:#b0b0b0; line-height:1.45;">Edit the label and reusable text for this item.</div>
             <div class="bind-dialog-section">
-                <div class="bind-dialog-section-title">1. ナビゲーション用単語</div>
-                <div class="bind-dialog-section-desc">キーボード上に表示され、検索で使用される短い単語</div>
+                <div class="bind-dialog-section-title">1. Navigation label</div>
+                <div class="bind-dialog-section-desc">A short label shown on the keyboard and used for search.</div>
                 <input type="text" class="bind-dialog-input" id="bindNavLabelInput" placeholder="例: Rust, debug, deploy">
             </div>
             
             <div class="bind-dialog-section">
-                <div class="bind-dialog-section-title">2. 設定文字列（長さ制限なし）</div>
-                <div class="bind-dialog-section-desc">この階層で返される実際の文字列（スキル、定型文など）</div>
+                <div class="bind-dialog-section-title">2. Saved text</div>
+                <div class="bind-dialog-section-desc">The prompt, command, or reusable text returned by this item.</div>
                 <textarea class="bind-dialog-textarea" id="bindContentInput" placeholder="例: Rust: 再現→切り分け&#10;fn main() {&#10;    // デバッグコード&#10;}"></textarea>
             </div>
         </div>
@@ -1531,15 +1532,15 @@
 
         // 1層目・2層目の設定（表示名と説明）
         const LAYER_SETTINGS = {
-            1: { name: '1層目', label: 'カテゴリ', desc: 'キーに割り当てる大分類（例: 言語・ツール・定型文）' },
-            2: { name: '2層目', label: '項目',     desc: 'カテゴリ内の個別項目。ここに「設定文字列」を割り当てる' }
+            1: { name: 'Level 1', label: 'Category', desc: 'A top-level group for tools, languages, or templates.' },
+            2: { name: 'Level 2', label: 'Item', desc: 'A reusable prompt, command, or saved text.' }
         };
         function getLayerDepth() {
             return currentPath.length === 0 ? 1 : (currentPath.length === 1 ? 2 : currentPath.length);
         }
         function getLayerLabel() {
             const d = getLayerDepth();
-            const s = LAYER_SETTINGS[d] || { name: `${d}層目`, label: `階層${d}` };
+            const s = LAYER_SETTINGS[d] || { name: `Level ${d}`, label: `Layer ${d}` };
             return `${s.name}（${s.label}）`;
         }
         function getLayerDepthForPath(path) {
@@ -1547,7 +1548,7 @@
         }
         function getLayerLabelForPath(path) {
             const d = getLayerDepthForPath(path);
-            const s = LAYER_SETTINGS[d] || { name: `${d}層目`, label: `階層${d}` };
+            const s = LAYER_SETTINGS[d] || { name: `Level ${d}`, label: `Layer ${d}` };
             return `${s.name}（${s.label}）`;
         }
 
@@ -1611,7 +1612,7 @@
                 await updateDisplay();
             } catch (error) {
                 console.error('階層ツリーの読み込みエラー:', error);
-                alert('階層ツリーの読み込みに失敗しました');
+                alert('Failed to load the navigation tree.');
                 // API失敗時もキーボードレイアウトは描画する（空のツリーで表示）
                 renderKeyboardLayout(inputMode);
             }
@@ -1805,7 +1806,7 @@
                         labelEl.className = 'key-label';
                         keyEl.appendChild(labelEl);
                     }
-                    labelEl.textContent = '[未設定]';
+                    labelEl.textContent = '[Unassigned]';
                 }
                 
                 // 文字数インジケータの更新（先に大きさ10刻み→最大で色10刻み）
@@ -1876,7 +1877,7 @@
                     stringEl.textContent = sourceNode.content;
                     stringEl.style.color = '#e0e0e0';
                 } else {
-                    stringEl.textContent = '[未設定] Ctrl+Enterで設定';
+                    stringEl.textContent = '[Unassigned] Press Ctrl+Enter to set text';
                     stringEl.style.color = '#858585';
                 }
             }
@@ -1990,7 +1991,7 @@
 
         // クリップボードにコピー
         async function copyToClipboard(text) {
-            if (!text || text === '[未設定] Ctrl+Enterで設定') return false;
+            if (!text || text === '[Unassigned] Press Ctrl+Enter to set text') return false;
             try {
                 await navigator.clipboard.writeText(text);
                 return true;
@@ -2051,7 +2052,9 @@
         if (launcherMarkerEl) launcherMarkerEl.addEventListener('click', () => expandMineparser(true));
         const collapseAppButtonEl = document.getElementById('collapseAppButton');
         if (collapseAppButtonEl) collapseAppButtonEl.addEventListener('click', collapseMineparser);
-        setMarkerCollapsed(Boolean(window.__TAURI__));
+        const isWebApp = !window.__TAURI__;
+        setMarkerCollapsed(!isWebApp);
+        if (isWebApp) setTimeout(() => document.getElementById('searchInput')?.focus(), 80);
 
         const tauriListen = window.__TAURI__?.event?.listen;
         if (tauriListen) tauriListen('mineparser:expanded', () => setMarkerCollapsed(false));
@@ -2066,7 +2069,7 @@
             const originalText = targetEl.textContent;
             const originalData = element.getAttribute('data-content');
             targetEl.setAttribute('data-feedback-original', originalText || '');
-            targetEl.textContent = success ? 'コピーしました' : 'コピーに失敗しました';
+            targetEl.textContent = success ? 'Copied' : 'Copy failed';
             setTimeout(() => {
                 element.classList.remove('copy-feedback', 'copy-feedback-error');
                 const restored = targetEl.getAttribute('data-feedback-original');
@@ -2097,7 +2100,7 @@
             });
             const el = document.getElementById('keyFeedback');
             if (!el) return;
-            el.textContent = `キー「${keyChar}」には割り当てがありません。Ctrl+Alt+${keyChar} で設定`;
+            el.textContent = `Key "${keyChar}" is unassigned. Press Ctrl+Alt+${keyChar} to configure it.`;
             el.classList.add('show');
             clearTimeout(showKeyError._tid);
             showKeyError._tid = setTimeout(() => {
@@ -2194,11 +2197,11 @@
             const altLineEl = document.getElementById('helpLineAltKey');
             const ctrlAltLineEl = document.getElementById('helpLineCtrlAltKey');
             if (inputMode === 'tenkey') {
-                if (titleEl) titleEl.textContent = '操作（数字はマップ用のため、以下で操作）';
+                if (titleEl) titleEl.textContent = 'Commands available at this level';
                 if (altLineEl) altLineEl.innerHTML = '<kbd>Alt</kbd>+<kbd>数字キー</kbd> 貼り付け先キーを選択（キーボード上でハイライト）→ 検索で項目を選び <kbd>Enter</kbd> でそのキーのバーに文字列を貼り付け';
                 if (ctrlAltLineEl) ctrlAltLineEl.innerHTML = '<kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>数字キー</kbd> そのキーの設定ダイアログを開く';
             } else {
-                if (titleEl) titleEl.textContent = '操作（英数字はマップ用のため、以下で操作）';
+                if (titleEl) titleEl.textContent = 'Commands available at this level';
                 if (altLineEl) altLineEl.innerHTML = '<kbd>Alt</kbd>+<kbd>英数字キー</kbd> 貼り付け先キーを選択（キーボード上でハイライト）→ 検索で項目を選び <kbd>Enter</kbd> でそのキーのバーに文字列を貼り付け';
                 if (ctrlAltLineEl) ctrlAltLineEl.innerHTML = '<kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>英数字キー</kbd> そのキーの設定ダイアログを開く';
             }
@@ -2255,7 +2258,7 @@
                 URL.revokeObjectURL(url);
             } catch (err) {
                 console.error('エクスポートエラー:', err);
-                alert('エクスポートに失敗しました: ' + err.message);
+                alert('Export failed: ' + err.message);
             }
         }
 
@@ -2286,7 +2289,7 @@
                     });
                     const payload = JSON.parse(text);
                     if (payload.schema_version == null || !Array.isArray(payload.nodes)) {
-                        alert('無効な形式です。schema_version と nodes 配列が必要です。');
+                        alert('Invalid format. schema_version and nodes are required.');
                         return;
                     }
                     const res = await fetch(`${API_BASE}/import`, {
@@ -2296,15 +2299,15 @@
                     });
                     const result = await res.json().catch(() => ({}));
                     if (!res.ok) {
-                        alert('インポートに失敗しました: ' + (result.error || res.statusText));
+                        alert('Import failed: ' + (result.error || res.statusText));
                         return;
                     }
                     await loadTree();
                     if (typeof updateDisplay === 'function') await updateDisplay();
-                    alert('インポートが完了しました。');
+                    alert('Import completed.');
                 } catch (err) {
                     console.error('インポートエラー:', err);
-                    alert('インポートに失敗しました: ' + err.message);
+                    alert('Import failed: ' + err.message);
                 }
             });
         })();
@@ -2487,7 +2490,7 @@
             
             // ルート（targetPath === ''）はナビ未入力でも保存可能。子ノードのみナビ必須
             if (!navLabel && targetPath !== '') {
-                alert('ナビゲーション用単語を入力してください');
+                alert('Please enter a navigation label.');
                 return;
             }
             
@@ -2513,7 +2516,7 @@
                 closeBindDialog();
             } catch (error) {
                 console.error('保存エラー:', error);
-                alert('保存に失敗しました: ' + error.message);
+                alert('Save failed: ' + error.message);
             }
         }
 
@@ -2778,7 +2781,7 @@
             }
             // 編集モード用パネル: タイトルを「この位置で有効なキー」に
             const titleEl = document.getElementById('autocomplete-panel-title');
-            if (titleEl) titleEl.textContent = 'この位置で有効なキー';
+            if (titleEl) titleEl.textContent = 'Keys available at this level';
             
             // デバッグ: 候補数をコンソールに出力
             console.log('候補を表示:', lastAutocompleteResults.length, '件');
@@ -2803,13 +2806,13 @@
                         autocomplete.classList.remove('show');
                     });
                 } else {
-                    const navLabel = (entry.navLabel && String(entry.navLabel).trim() !== '') ? entry.navLabel : '(未設定)';
+                    const navLabel = (entry.navLabel && String(entry.navLabel).trim() !== '') ? entry.navLabel : '(Unassigned)';
                     // why: 兄弟候補は「この位置のキーを選んだキーに変える」意図を明示するため別ラベルにする
                     // alt: 通常ノードと同じ navLabel のみでもよいが、編集モードでの置換であることが分かるようにした
                     // evidence: 計画書「第4段階：displayAutocomplete のノード描画で isSiblingCandidate のとき」
                     // assumption: entry.keyChar は getLayerBindItems で付与されている
                     if (entry.isSiblingCandidate && entry.keyChar != null) {
-                        item.textContent = `このキーを ${entry.keyChar} に変える → ${navLabel}`;
+                        item.textContent = `Use key ${entry.keyChar} → ${navLabel}`;
                     } else {
                         item.textContent = navLabel;
                     }
@@ -2819,7 +2822,7 @@
                         const pathDisplay = predictedPath.split('').join(' → ');
                         const predictedSpan = document.createElement('span');
                         predictedSpan.className = 'predicted-label';
-                        predictedSpan.textContent = `予測: ${pathDisplay}`;
+                        predictedSpan.textContent = `Predicted: ${pathDisplay}`;
                         item.appendChild(predictedSpan);
                     }
                     // 到達階層での候補の場合、どの階層での候補かを表示
@@ -2828,14 +2831,14 @@
                         const layerSpan = document.createElement('span');
                         layerSpan.className = 'predicted-label';
                         layerSpan.style.color = '#ffa500'; // オレンジ色で区別
-                        layerSpan.textContent = `階層 ${layerPathDisplay || 'root'} での候補`;
+                        layerSpan.textContent = `Suggestion at ${layerPathDisplay || 'root'}`;
                         item.appendChild(layerSpan);
                     }
                     item.addEventListener('click', async () => {
                         // 存在チェック（ツリー構造を維持）
                         const targetNode = getNode(entry.id);
                         if (!targetNode) {
-                            alert(`エラー: パス "${entry.id}" は存在しません。ツリー構造を維持するため、設定されているノードのみ移動できます。`);
+                            alert(`Path "${entry.id}" does not exist. Only configured nodes can be selected.`);
                             return;
                         }
                         // 予測変換確定時に追記されないよう、確定前に検索欄を選択値で置換する
@@ -2890,7 +2893,7 @@
             if (mode === 'nav' && typeof updateContentDisplay === 'function') {
                 updateContentDisplay();
             } else if (panelTitle) {
-                panelTitle.textContent = 'この位置で有効なキー';
+                panelTitle.textContent = 'Keys available at this level';
             }
         }
 
@@ -3060,7 +3063,7 @@
                         const targetNode = getNode(sel.id);
                         if (!targetNode) {
                             // ノードが存在しない場合はエラー表示
-                            alert(`エラー: パス "${sel.id}" は存在しません。ツリー構造を維持するため、設定されているノードのみ移動できます。`);
+                            alert(`Path "${sel.id}" does not exist. Only configured nodes can be selected.`);
                             return;
                         }
                         const textToPaste = (sel.navLabel && String(sel.navLabel).trim() !== '') ? sel.navLabel : '';
@@ -3078,7 +3081,7 @@
                                     pasteTargetKey = null;
                                 } catch (err) {
                                     console.error('貼り付けエラー:', err);
-                                    alert('貼り付けに失敗しました');
+                                    alert('Paste failed.');
                                 }
                             })();
                             searchInput.value = '';
@@ -3257,6 +3260,10 @@
                 } else if (dialogOpen) {
                     closeBindDialog();
                     e.preventDefault();
+                } else if (!window.__TAURI__) {
+                    // In the web app Escape collapses the workspace back to its launcher state.
+                    collapseMineparser();
+                    e.preventDefault();
                 }
                 return;
             }
@@ -3353,7 +3360,7 @@
                     const navLabelInputEl = document.getElementById('bindNavLabelInput');
                     const contentInputEl = document.getElementById('bindContentInput');
                     const dialogEl = document.getElementById('bindDialog');
-                    if (keyNameEl) keyNameEl.textContent = '[現在の階層]';
+                    if (keyNameEl) keyNameEl.textContent = '[Current item]';
                     if (currentPathEl) currentPathEl.textContent = currentPath || '';
                     if (navLabelInputEl) navLabelInputEl.value = current.navLabel || '';
                     if (contentInputEl) contentInputEl.value = current.content || '';
@@ -3426,7 +3433,7 @@
                 const navLabelInputEl = document.getElementById('bindNavLabelInput');
                 const contentInputEl = document.getElementById('bindContentInput');
                 const dialogEl = document.getElementById('bindDialog');
-                if (keyNameEl) keyNameEl.textContent = '[現在の階層]';
+                if (keyNameEl) keyNameEl.textContent = '[Current item]';
                 if (currentPathEl) currentPathEl.textContent = currentPath || '';
                 if (navLabelInputEl) navLabelInputEl.value = current.navLabel || '';
                 if (contentInputEl) contentInputEl.value = current.content || '';
@@ -3447,7 +3454,7 @@
                 const navLabelInputEl = document.getElementById('bindNavLabelInput');
                 const contentInputEl = document.getElementById('bindContentInput');
                 const dialogEl = document.getElementById('bindDialog');
-                if (keyNameEl) keyNameEl.textContent = '[現在の階層]';
+                if (keyNameEl) keyNameEl.textContent = '[Current item]';
                 if (currentPathEl) currentPathEl.textContent = currentPath || '';
                 if (navLabelInputEl) navLabelInputEl.value = current.navLabel || '';
                 if (contentInputEl) contentInputEl.value = current.content || '';
@@ -3468,7 +3475,7 @@
                 const navLabelInputEl = document.getElementById('bindNavLabelInput');
                 const contentInputEl = document.getElementById('bindContentInput');
                 const dialogEl = document.getElementById('bindDialog');
-                if (keyNameEl) keyNameEl.textContent = '[現在の階層]';
+                if (keyNameEl) keyNameEl.textContent = '[Current item]';
                 if (currentPathEl) currentPathEl.textContent = currentPath || '';
                 if (navLabelInputEl) navLabelInputEl.value = current.navLabel || '';
                 if (contentInputEl) contentInputEl.value = current.content || '';
