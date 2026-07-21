@@ -547,6 +547,13 @@
             .key { width: clamp(38px, 8vw, 61px); height: clamp(38px, 8vw, 61px); }
         }
 
+        /* Narrow phones: keep the search/preview navigation usable instead of
+           squeezing the keyboard into an unreadable, overlapping layout. */
+        @media (max-width: 420px) {
+            .keyboard-section { display: none; }
+            .autocomplete-panel { min-height: 300px; }
+        }
+
         /* 未割り当てキー押下時の一瞬の赤フィードバック */
         .key.key-error {
             background: #c0392b !important;
