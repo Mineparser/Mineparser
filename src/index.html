@@ -559,7 +559,12 @@
             .keyboard-row.row2 { padding-left: 8px; }
             .keyboard-row.row3 { padding-left: 14px; }
             .keyboard-row.row0 { margin-bottom: 2px; }
-            .key-label { top: -13px; max-width: none; font-size: 7px; line-height: 1; }
+            .key-label {
+                top: -13px;
+                max-width: none;
+                font-size: clamp(7px, calc(var(--key-size, 34px) * 0.18), 11px);
+                line-height: 1;
+            }
             .autocomplete-panel { min-height: 220px; }
         }
 
