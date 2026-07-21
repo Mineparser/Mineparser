@@ -1584,14 +1584,14 @@
             en: {
                 settings: 'Settings', language: 'Interface language', languageHelp: 'Choose a preferred interface language.', close: 'Close',
                 mode: 'Mode', copyOnly: 'Copy only', copyOnlyHelp: 'Copy saved text to the clipboard.', pastePrevious: 'Paste to previous app', pastePreviousHelp: 'Return to the previous app and paste automatically.',
-                help: 'Keyboard shortcuts', edit: 'Edit item', cancel: 'Cancel', save: 'Save', navLabel: 'Navigation label', savedText: 'Saved text',
+                help: 'Keyboard shortcuts', edit: 'Edit item', cancel: 'Cancel', save: 'Save', navLabel: 'Navigation label', savedText: 'Saved text', collapse: 'Collapse', suggestions: 'Suggestions',
                 navLabelHelp: 'A short label shown on the keyboard and used for search.', savedTextHelp: 'The prompt, command, or reusable text returned by this item.',
                 search: 'Type to search or navigate...', tryTyping: 'Try typing a keyword, or press a mapped key to navigate.'
             },
             ja: {
                 settings: '設定', language: '表示言語', languageHelp: '使用する表示言語を選択してください。', close: '閉じる',
                 mode: 'モード', copyOnly: 'コピーのみ', copyOnlyHelp: '保存した文字列をクリップボードへコピーします。', pastePrevious: '元のアプリへ貼り付け', pastePreviousHelp: '呼び出し前のアプリへ戻り、自動で貼り付けます。',
-                help: 'キーボードショートカット', edit: '項目を編集', cancel: 'キャンセル', save: '保存', navLabel: 'ナビゲーションラベル', savedText: '保存する文字列',
+                help: 'キーボードショートカット', edit: '項目を編集', cancel: 'キャンセル', save: '保存', navLabel: 'ナビゲーションラベル', savedText: '保存する文字列', collapse: '折りたたむ', suggestions: '候補',
                 navLabelHelp: 'キーボードに表示し、検索に使う短いラベルです。', savedTextHelp: '選択したときに返すプロンプト、コマンド、定型文です。',
                 search: '検索または移動...', tryTyping: 'キーワードを入力するか、割り当てキーで移動してください。'
             },
@@ -1637,6 +1637,8 @@
             setText('label[for="settingLanguage"]', t.language);
             setText('.setting-help-text', t.languageHelp);
             setText('#settingModalClose', t.close);
+            setText('#collapseAppButton', t.collapse || UI_TRANSLATIONS.en.collapse);
+            setText('#autocomplete-panel-title', t.suggestions || UI_TRANSLATIONS.en.suggestions);
             setText('#modeModalTitle', t.mode);
             setText('#modeModalClose', t.close);
             setText('.mode-choice:nth-of-type(1) strong', t.copyOnly);
@@ -1795,8 +1797,10 @@
                 });
                 
                 if (!response.ok) {
-                    // 404エラーの場合は特別に処理
                     if (response.status === 404) {
+                        // An empty local store has no root node yet. Treat the
+                        // initial tree request as an empty state, not an error.
+                        if (endpoint === '/tree') return {};
                         const error = new Error(`API Error: ${response.status} ${response.statusText}`);
                         error.status = 404;
                         throw error;
@@ -1806,7 +1810,7 @@
                 
                 return await response.json();
             } catch (error) {
-                console.error('API呼び出しエラー:', error);
+                if (error.status !== 404) console.error('API呼び出しエラー:', error);
                 throw error;
             }
         }
