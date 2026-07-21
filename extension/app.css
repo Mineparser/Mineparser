@@ -2,7 +2,9 @@
 * { box-sizing: border-box; }
 body { margin: 0; min-width: 250px; background: #071326 url('assets/mineparser-mountain-bg.png') center / cover fixed no-repeat; color: #dbeafe; }
 .app { min-height: 100vh; padding: clamp(8px, 2vw, 18px); background: rgba(9, 22, 40, .58); backdrop-filter: blur(7px) saturate(120%); }
-header { display: flex; gap: 8px; align-items: center; }
+header { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.fkeys { display: flex; gap: 5px; flex-wrap: wrap; } .fkeys button,.fkeys .tool-button { padding: 8px 10px; }
+.search-line { display:flex; gap:8px; margin-top:8px; } #collapse { font-size: 18px; }
 .badge { padding: 9px 11px; border-radius: 7px; background: rgba(20,102,165,.86); font-weight: 700; }
 input { min-width: 0; flex: 1; padding: 11px 12px; border: 1px solid rgba(130,180,220,.5); border-radius: 7px; background: rgba(10,25,45,.58); color: inherit; font-size: 16px; }
 button,.tool-button { padding: 8px 11px; border: 1px solid rgba(130,180,220,.5); border-radius: 6px; background: rgba(25,53,84,.84); color: inherit; cursor: pointer; }
@@ -15,6 +17,7 @@ dialog form { display: grid; gap: 12px; min-width: min(360px, 80vw); } dialog in
 .key { position: relative; flex: 1 1 0; min-width: 0; max-width: 86px; aspect-ratio: 1; border: 1px solid rgba(130,160,190,.5); border-radius: 6px; background: rgba(36,56,81,.72); color: #e8f2ff; cursor: pointer; }
 .key:hover,.key.active { background: #17699f; }
 .label { position: absolute; left: 50%; top: -18px; transform: translateX(-50%); max-width: 130px; color: #75e6cf; font-size: clamp(7px, 1.4vw, 11px); white-space: nowrap; overflow: visible; }
-.preview { min-height: 150px; margin-top: 16px; padding: 16px; border: 1px solid rgba(130,180,220,.25); border-radius: 9px; background: rgba(10,25,45,.72); backdrop-filter: blur(5px); }
+.content { display:grid; grid-template-columns:minmax(0,1.2fr) minmax(240px,.8fr); gap:14px; align-items:stretch; } .content #keyboard { grid-column:1; } .preview { grid-column:2; grid-row:1; min-height: 300px; margin-top: 0; padding: 16px; border: 1px solid rgba(130,180,220,.25); border-radius: 9px; background: rgba(10,25,45,.72); backdrop-filter: blur(5px); }
 pre { white-space: pre-wrap; color: #b7c8dc; }
-@media (max-width: 420px) { .app { padding: 8px; } .label { font-size: 7px; } .preview { min-height: 120px; } }
+@media (max-width: 900px) { .content { display:flex; flex-direction:column; } .preview { min-height: 180px; order:2; } }
+@media (max-width: 420px) { .app { padding: 8px; } .label { font-size: 7px; } .preview { min-height: 120px; } .fkeys button,.fkeys .tool-button { padding: 6px 7px; font-size: 11px; } }

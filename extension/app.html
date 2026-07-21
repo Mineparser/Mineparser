@@ -3,11 +3,11 @@
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Mineparser</title><link rel="stylesheet" href="app.css"></head>
 <body>
   <main class="app">
-    <header><span class="badge" id="modeBadge">Nav</span><input id="search" autofocus placeholder="Type to search or navigate..."><button id="settings" title="Settings">⚙</button></header>
+    <header><span class="badge" id="modeBadge">Nav</span><div class="fkeys"><button data-action="help">Help (F1)</button><button data-action="export">Export (F2)</button><label for="import" class="tool-button">Import (F3)</label><button data-action="layout">Keyboard (F4)</button><button data-action="settings">Settings (F5)</button><button data-action="mode">Mode (F6)</button></div></header>
+    <div class="search-line"><input id="search" autofocus placeholder="Type to search or navigate..."><button id="collapse" title="Collapse">×</button></div>
     <nav class="tools"><button id="edit">Edit</button><button id="export">Export</button><label for="import" class="tool-button">Import</label><input id="import" type="file" accept=".json" hidden></nav>
     <p id="hint">Press a key or search for a saved prompt.</p>
-    <section id="keyboard" aria-label="Keyboard navigation"></section>
-    <section class="preview"><strong id="previewLabel">Nav: Unassigned</strong><pre id="previewText">[Unassigned]</pre></section>
+    <div class="content"><section id="keyboard" aria-label="Keyboard navigation"></section><section class="preview"><strong id="previewLabel">Nav: Unassigned</strong><pre id="previewText">[Unassigned]</pre></section></div>
   </main>
   <dialog id="settingsDialog"><form method="dialog"><h2>Settings</h2><label>Language <select id="language"><option value="en">English</option><option value="ja">日本語</option></select></label><label>Layout <select id="layout"><option value="qwerty">QWERTY</option><option value="tenkey">Tenkey</option></select></label><menu><button value="cancel">Cancel</button><button id="saveSettings" value="default">Save</button></menu></form></dialog>
   <dialog id="editDialog"><form id="editForm"><h2>Edit item</h2><input id="editLabel" placeholder="Navigation label" required><textarea id="editContent" placeholder="Saved prompt or command"></textarea><menu><button type="button" id="cancelEdit">Cancel</button><button>Save</button></menu></form></dialog>

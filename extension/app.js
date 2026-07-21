@@ -5,6 +5,12 @@ const previewLabel = document.querySelector('#previewLabel');
 const previewText = document.querySelector('#previewText');
 let nodes = {};
 let layout = 'qwerty'; let language = 'en'; let selected = null;
+document.querySelectorAll('.fkeys [data-action]').forEach(button => button.addEventListener('click', () => {
+  const action=button.dataset.action; if(action==='export') document.querySelector('#export').click();
+  if(action==='layout') { layout=layout==='qwerty'?'tenkey':'qwerty'; chrome.storage.local.set({layout}); render(); }
+  if(action==='settings') document.querySelector('#settings').click();
+}));
+document.querySelector('#collapse').onclick=()=>window.close();
 const keyId = key => key.toLowerCase();
 function render() {
   keyboard.replaceChildren();
