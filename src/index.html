@@ -1446,18 +1446,18 @@
         </div>
     </div>
     <aside class="web-shortcuts" aria-label="Web demo shortcuts">
-        <div class="web-shortcuts-title">Web demo shortcuts</div>
+        <div class="web-shortcuts-title" id="webShortcutsTitle">Web demo shortcuts</div>
         <div class="web-shortcuts-grid">
-            <span><kbd>Ctrl</kbd> + <kbd>K</kbd> Search</span>
-            <span><kbd>Enter</kbd> Copy</span>
-            <span><kbd>Backspace</kbd> Go up</span>
-            <span><kbd>Escape</kbd> Collapse</span>
-            <span><kbd>F1</kbd> Help</span>
-            <span><kbd>F2</kbd> Export</span>
-            <span><kbd>F3</kbd> Import</span>
-            <span><kbd>F4</kbd> Layout</span>
-            <span><kbd>F5</kbd> Settings</span>
-            <span><kbd>F6</kbd> Mode</span>
+            <span><kbd>Ctrl</kbd> + <kbd>K</kbd> <span data-shortcut-label="search">Search</span></span>
+            <span><kbd>Enter</kbd> <span data-shortcut-label="copy">Copy</span></span>
+            <span><kbd>Backspace</kbd> <span data-shortcut-label="up">Go up</span></span>
+            <span><kbd>Escape</kbd> <span data-shortcut-label="collapse">Collapse</span></span>
+            <span><kbd>F1</kbd> <span data-shortcut-label="help">Help</span></span>
+            <span><kbd>F2</kbd> <span data-shortcut-label="export">Export</span></span>
+            <span><kbd>F3</kbd> <span data-shortcut-label="import">Import</span></span>
+            <span><kbd>F4</kbd> <span data-shortcut-label="layout">Layout</span></span>
+            <span><kbd>F5</kbd> <span data-shortcut-label="settings">Settings</span></span>
+            <span><kbd>F6</kbd> <span data-shortcut-label="mode">Mode</span></span>
         </div>
     </aside>
 
@@ -1473,14 +1473,14 @@
         <div class="bind-dialog-body">
             <div class="bind-dialog-desc" style="margin-bottom:14px; font-size:14px; color:#b0b0b0; line-height:1.45;">Edit the label and reusable text for this item.</div>
             <div class="bind-dialog-section">
-                <div class="bind-dialog-section-title">1. Navigation label</div>
-                <div class="bind-dialog-section-desc">A short label shown on the keyboard and used for search.</div>
+                <div class="bind-dialog-section-title" id="bindNavLabelTitle">1. Navigation label</div>
+                <div class="bind-dialog-section-desc" id="bindNavLabelHelp">A short label shown on the keyboard and used for search.</div>
                 <input type="text" class="bind-dialog-input" id="bindNavLabelInput" placeholder="Example: Rust, debug, deploy">
             </div>
             
             <div class="bind-dialog-section">
-                <div class="bind-dialog-section-title">2. Saved text</div>
-                <div class="bind-dialog-section-desc">The prompt, command, or reusable text returned by this item.</div>
+                <div class="bind-dialog-section-title" id="bindSavedTextTitle">2. Saved text</div>
+                <div class="bind-dialog-section-desc" id="bindSavedTextHelp">The prompt, command, or reusable text returned by this item.</div>
                 <textarea class="bind-dialog-textarea" id="bindContentInput" placeholder="Example: Rust: reproduce → isolate&#10;fn main() {&#10;    // debugging code&#10;}"></textarea>
             </div>
         </div>
@@ -1574,6 +1574,25 @@
         };
 
         function currentUiText() { return UI_TRANSLATIONS[interfaceLanguage] || UI_TRANSLATIONS.en; }
+        const UI_LABELS = {
+            en: ['Help', 'Export', 'Import', 'Keyboard', 'Settings', 'Mode'],
+            ja: ['ヘルプ', 'エクスポート', 'インポート', 'キーボード', '設定', 'モード'],
+            'zh-CN': ['帮助', '导出', '导入', '键盘', '设置', '模式'], 'zh-TW': ['說明', '匯出', '匯入', '鍵盤', '設定', '模式'],
+            ko: ['도움말', '내보내기', '가져오기', '키보드', '설정', '모드'], es: ['Ayuda', 'Exportar', 'Importar', 'Teclado', 'Ajustes', 'Modo'],
+            fr: ['Aide', 'Exporter', 'Importer', 'Clavier', 'Paramètres', 'Mode'], de: ['Hilfe', 'Export', 'Import', 'Tastatur', 'Einstellungen', 'Modus'],
+            pt: ['Ajuda', 'Exportar', 'Importar', 'Teclado', 'Configurações', 'Modo'], it: ['Aiuto', 'Esporta', 'Importa', 'Tastiera', 'Impostazioni', 'Modalità'],
+            ru: ['Справка', 'Экспорт', 'Импорт', 'Клавиатура', 'Настройки', 'Режим'], hi: ['मदद', 'निर्यात', 'आयात', 'कीबोर्ड', 'सेटिंग्स', 'मोड'],
+            ar: ['مساعدة', 'تصدير', 'استيراد', 'لوحة المفاتيح', 'الإعدادات', 'الوضع']
+        };
+        const SHORTCUT_LABELS = {
+            en: ['Web demo shortcuts', 'Search', 'Copy', 'Go up', 'Collapse'], ja: ['Webデモのショートカット', '検索', 'コピー', '上へ戻る', '折りたたむ'],
+            'zh-CN': ['Web 演示快捷键', '搜索', '复制', '返回上级', '收起'], 'zh-TW': ['Web 示範快速鍵', '搜尋', '複製', '返回上層', '收合'],
+            ko: ['웹 데모 단축키', '검색', '복사', '위로 이동', '접기'], es: ['Atajos de la demo web', 'Buscar', 'Copiar', 'Subir', 'Contraer'],
+            fr: ['Raccourcis de la démo web', 'Rechercher', 'Copier', 'Remonter', 'Réduire'], de: ['Web-Demo-Tastenkürzel', 'Suchen', 'Kopieren', 'Nach oben', 'Einklappen'],
+            pt: ['Atalhos da demonstração web', 'Pesquisar', 'Copiar', 'Subir', 'Recolher'], it: ['Scorciatoie della demo web', 'Cerca', 'Copia', 'Su', 'Comprimi'],
+            ru: ['Быстрые клавиши веб-демо', 'Поиск', 'Копировать', 'Вверх', 'Свернуть'], hi: ['वेब डेमो शॉर्टकट', 'खोजें', 'कॉपी करें', 'ऊपर जाएँ', 'समेटें'],
+            ar: ['اختصارات العرض التجريبي', 'بحث', 'نسخ', 'للأعلى', 'طي']
+        };
 
         function applyUiLanguage() {
             const t = currentUiText();
@@ -1594,20 +1613,19 @@
             setText('.bind-dialog-title', t.edit);
             setText('.bind-dialog-button.secondary', t.cancel);
             setText('.bind-dialog-button.primary', t.save);
-            setText('.bind-dialog-section-title:nth-of-type(1)', `1. ${t.navLabel}`);
-            setText('.bind-dialog-section-title:nth-of-type(2)', `2. ${t.savedText}`);
-            setText('.bind-dialog-section-desc:nth-of-type(1)', t.navLabelHelp);
-            setText('.bind-dialog-section-desc:nth-of-type(2)', t.savedTextHelp);
+            setText('#bindNavLabelTitle', `1. ${t.navLabel}`); setText('#bindSavedTextTitle', `2. ${t.savedText}`);
+            setText('#bindNavLabelHelp', t.navLabelHelp); setText('#bindSavedTextHelp', t.savedTextHelp);
             const searchEl = document.getElementById('searchInput');
             if (searchEl) searchEl.placeholder = t.search;
             const hintEl = document.querySelector('.search-section > .search-label[style*="margin-top"]');
             if (hintEl) hintEl.textContent = t.tryTyping;
-            const buttonLabels = japanese
-                ? ['ヘルプ (F1)', 'エクスポート (F2)', 'インポート (F3)', 'キーボード (F4)', '設定 (F5)', 'モード (F6)']
-                : ['Help (F1)', 'Export (F2)', 'Import (F3)', 'Keyboard (F4)', 'Settings (F5)', 'Mode (F6)'];
+            const buttonLabels = (UI_LABELS[interfaceLanguage] || UI_LABELS.en).map((label, index) => `${label} (F${index + 1})`);
             document.querySelectorAll('.fkey-row .fkey-btn').forEach((button, index) => {
                 if (buttonLabels[index]) button.textContent = buttonLabels[index];
             });
+            const shortcuts = SHORTCUT_LABELS[interfaceLanguage] || SHORTCUT_LABELS.en;
+            setText('#webShortcutsTitle', shortcuts[0]);
+            document.querySelectorAll('[data-shortcut-label]').forEach((el) => { const key = el.dataset.shortcutLabel; const index = ['search','copy','up','collapse'].indexOf(key) + 1; if (index) el.textContent = shortcuts[index]; });
             applyLanguageExamples();
             updateHelpModalText();
         }
@@ -2429,6 +2447,14 @@
                     btn.setAttribute('aria-label', 'Mode (F6) モード選択');
                 }
             });
+            const localizedLabels = UI_LABELS[interfaceLanguage] || UI_LABELS.en;
+            document.querySelectorAll('.fkey-row .fkey-btn').forEach(function(btn, index) {
+                if (localizedLabels[index]) {
+                    btn.textContent = `${localizedLabels[index]} (F${index + 1})`;
+                    btn.setAttribute('title', `${localizedLabels[index]} (F${index + 1})`);
+                    btn.setAttribute('aria-label', `${localizedLabels[index]} (F${index + 1})`);
+                }
+            });
         }
 
         function resizeKeyboardToPreview() {
@@ -2625,13 +2651,28 @@
         if (settingModalCloseEl) settingModalCloseEl.addEventListener('click', closeSettingModal);
         const settingLanguageEl = document.getElementById('settingLanguage');
         function applyLanguageExamples() {
-            const japanese = interfaceLanguage === 'ja';
+            const examples = {
+                en: ['Type to search or navigate...', 'Example: Rust, debug, deploy', 'Example: Rust: reproduce → isolate\nfn main() {\n    // debugging code\n}'],
+                ja: ['検索または移動...', '例: Rust、デバッグ、デプロイ', '例: Rust: 再現 → 切り分け\nfn main() {\n    // デバッグコード\n}'],
+                'zh-CN': ['搜索或导航...', '示例：Rust、调试、部署', '示例：Rust：复现 → 隔离\nfn main() {\n    // 调试代码\n}'],
+                'zh-TW': ['搜尋或導覽...', '範例：Rust、除錯、部署', '範例：Rust：重現 → 隔離\nfn main() {\n    // 除錯程式碼\n}'],
+                ko: ['검색 또는 탐색...', '예: Rust, 디버그, 배포', '예: Rust: 재현 → 격리\nfn main() {\n    // 디버깅 코드\n}'],
+                es: ['Buscar o navegar...', 'Ejemplo: Rust, depurar, desplegar', 'Ejemplo: Rust: reproducir → aislar\nfn main() {\n    // código de depuración\n}'],
+                fr: ['Rechercher ou naviguer...', 'Exemple : Rust, déboguer, déployer', 'Exemple : Rust : reproduire → isoler\nfn main() {\n    // code de débogage\n}'],
+                de: ['Suchen oder navigieren...', 'Beispiel: Rust, debuggen, bereitstellen', 'Beispiel: Rust: reproduzieren → isolieren\nfn main() {\n    // Debug-Code\n}'],
+                pt: ['Pesquisar ou navegar...', 'Exemplo: Rust, depurar, publicar', 'Exemplo: Rust: reproduzir → isolar\nfn main() {\n    // código de depuração\n}'],
+                it: ['Cerca o naviga...', 'Esempio: Rust, debug, deploy', 'Esempio: Rust: riprodurre → isolare\nfn main() {\n    // codice di debug\n}'],
+                ru: ['Поиск или навигация...', 'Пример: Rust, отладка, развёртывание', 'Пример: Rust: воспроизвести → изолировать\nfn main() {\n    // код отладки\n}'],
+                hi: ['खोजें या नेविगेट करें...', 'उदाहरण: Rust, डीबग, डिप्लॉय', 'उदाहरण: Rust: पुनरुत्पादन → अलग करना\nfn main() {\n    // डीबग कोड\n}'],
+                ar: ['بحث أو تنقل...', 'مثال: Rust، تصحيح، نشر', 'مثال: Rust: إعادة الإنتاج → العزل\nfn main() {\n    // كود التصحيح\n}']
+            }[interfaceLanguage] || null;
             const searchEl = document.getElementById('searchInput');
             const navEl = document.getElementById('bindNavLabelInput');
             const contentEl = document.getElementById('bindContentInput');
-            if (searchEl) searchEl.placeholder = japanese ? '検索または移動...' : 'Type to search or navigate...';
-            if (navEl) navEl.placeholder = japanese ? '例: Rust、デバッグ、デプロイ' : 'Example: Rust, debug, deploy';
-            if (contentEl) contentEl.placeholder = japanese ? '例: Rust: 再現 → 切り分け\nfn main() {\n    // デバッグコード\n}' : 'Example: Rust: reproduce → isolate\nfn main() {\n    // debugging code\n}';
+            const [search, nav, content] = examples || ['Type to search or navigate...', 'Example: Rust, debug, deploy', 'Example: Rust: reproduce → isolate\nfn main() {\n    // debugging code\n}'];
+            if (searchEl) searchEl.placeholder = search;
+            if (navEl) navEl.placeholder = nav;
+            if (contentEl) contentEl.placeholder = content;
         }
         applyUiLanguage();
         if (settingLanguageEl) settingLanguageEl.addEventListener('change', (event) => {
