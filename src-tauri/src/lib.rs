@@ -1,6 +1,6 @@
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 use std::sync::Mutex;
-use tauri::{Emitter, LogicalPosition, LogicalSize, Manager, Position, Size, WebviewWindow};
+use tauri::{AppHandle, Emitter, LogicalPosition, LogicalSize, Manager, Position, Size, WebviewWindow};
 
 #[derive(Default)]
 struct TargetWindow(Mutex<Option<isize>>);
@@ -62,12 +62,26 @@ fn paste_to_previous_window(window: WebviewWindow, state: tauri::State<'_, Targe
     Ok(())
 }
 
+#[tauri::command]
+fn set_autostart(app: AppHandle, enabled: bool) -> Result<(), String> {
+    use tauri_plugin_autostart::ManagerExt;
+    if enabled { app.autolaunch().enable() } else { app.autolaunch().disable() }
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn get_autostart(app: AppHandle) -> Result<bool, String> {
+    use tauri_plugin_autostart::ManagerExt;
+    app.autolaunch().is_enabled().map_err(|e| e.to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .manage(TargetWindow::default())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
+        .plugin(tauri_plugin_autostart::Builder::new().build())
         .setup(|app| {
             #[cfg(desktop)]
             {
@@ -85,7 +99,7 @@ pub fn run() {
             }
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![prepare_show, prepare_show_from_marker, collapse_marker, paste_to_previous_window])
+        .invoke_handler(tauri::generate_handler![prepare_show, prepare_show_from_marker, collapse_marker, paste_to_previous_window, set_autostart, get_autostart])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

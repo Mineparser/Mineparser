@@ -1279,6 +1279,8 @@
             font-size: 12px;
             line-height: 1.45;
         }
+        .app-only-setting { display: none; }
+        body.tauri-mode .app-only-setting { display: block; }
 
         .keyboard-title,
         .autocomplete-panel-title,
@@ -1441,6 +1443,10 @@
                             <option value="ar">العربية — Arabic</option>
                         </select>
                         <div class="setting-help-text">Choose a preferred interface language. Additional translations will be added progressively.</div>
+                    </div>
+                    <div class="setting-row app-only-setting" id="autostartSetting">
+                        <label><input type="checkbox" id="settingAutostart"> Launch at system startup</label>
+                        <div class="setting-help-text">Start Mineparser automatically when you sign in to your computer.</div>
                     </div>
                 </div>
                 <button type="button" class="setting-modal-close" id="settingModalClose">Close</button>
@@ -2272,6 +2278,7 @@
         if (collapseAppButtonEl) collapseAppButtonEl.addEventListener('click', collapseMineparser);
         const isWebApp = !window.__TAURI__;
         if (isWebApp) document.body.classList.add('web-mode');
+        else document.body.classList.add('tauri-mode');
         setMarkerCollapsed(!isWebApp);
         if (isWebApp) setTimeout(() => document.getElementById('searchInput')?.focus(), 80);
 
@@ -2667,6 +2674,19 @@
         const settingModalCloseEl = document.getElementById('settingModalClose');
         if (settingModalCloseEl) settingModalCloseEl.addEventListener('click', closeSettingModal);
         const settingLanguageEl = document.getElementById('settingLanguage');
+        const autostartEl = document.getElementById('settingAutostart');
+        const tauriInvoke = window.__TAURI__?.core?.invoke;
+        if (autostartEl && tauriInvoke) {
+            tauriInvoke('get_autostart').then((enabled) => { autostartEl.checked = Boolean(enabled); }).catch(() => {
+                autostartEl.checked = localStorage.getItem('mineparser.autostart') === 'true';
+            });
+            autostartEl.addEventListener('change', async (event) => {
+                const enabled = event.target.checked;
+                localStorage.setItem('mineparser.autostart', String(enabled));
+                try { await tauriInvoke('set_autostart', { enabled }); }
+                catch (err) { event.target.checked = !enabled; console.warn('オート起動設定を保存できませんでした:', err); }
+            });
+        }
         function applyLanguageExamples() {
             const examples = {
                 en: ['Type to search or navigate...', 'Example: Rust, debug, deploy', 'Example: Rust: reproduce → isolate\nfn main() {\n    // debugging code\n}'],
