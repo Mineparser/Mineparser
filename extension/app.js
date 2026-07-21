@@ -8,7 +8,7 @@ let layout = 'qwerty'; let language = 'en'; let selected = null;
 document.querySelectorAll('.fkeys [data-action]').forEach(button => button.addEventListener('click', () => {
   const action=button.dataset.action; if(action==='export') document.querySelector('#export').click();
   if(action==='layout') { layout=layout==='qwerty'?'tenkey':'qwerty'; chrome.storage.local.set({layout}); render(); }
-  if(action==='settings') settingsDialog.showModal();
+  if(action==='settings') openSettings();
 }));
 document.querySelector('#collapse').onclick=()=>window.close();
 const keyId = key => key.toLowerCase();
@@ -24,7 +24,7 @@ function select(key) { selected = key; const node = nodes[key]; previewLabel.tex
 search.addEventListener('input', () => { const q = search.value.toLowerCase(); const found = Object.entries(nodes).find(([,n]) => `${n.navLabel} ${n.content}`.toLowerCase().includes(q)); if (found) select(found[0]); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') window.close(); const key = e.key.length === 1 ? keyId(e.key.toUpperCase()) : null; if (key && nodes[key]) select(key); });
 const settingsDialog = document.querySelector('#settingsDialog');
-document.querySelector('#settings').onclick = () => { document.querySelector('#language').value=language; document.querySelector('#layout').value=layout; settingsDialog.showModal(); };
+function openSettings() { document.querySelector('#language').value=language; document.querySelector('#layout').value=layout; if (!settingsDialog.open) settingsDialog.showModal(); }
 document.querySelector('#saveSettings').onclick = () => { language=document.querySelector('#language').value; layout=document.querySelector('#layout').value; chrome.storage.local.set({language,layout}); render(); };
 const editDialog=document.querySelector('#editDialog');
 document.querySelector('#edit').onclick=()=>{ if(!selected)return; const n=nodes[selected]||{}; document.querySelector('#editLabel').value=n.navLabel||''; document.querySelector('#editContent').value=n.content||''; editDialog.showModal(); };
