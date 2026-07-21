@@ -24,7 +24,13 @@ test('extension UI exposes persistence, editing, layout, and data transfer contr
   assert.match(read('background.js'), /chrome\.scripting\.executeScript/);
   assert.match(read('background.js'), /chrome\|edge\|about\|devtools/);
   assert.match(read('overlay.js'), /mineparser-extension-host/);
-  assert.match(read('overlay.js'), /mineparser\.github\.io\/Mineparser\/app/);
+  assert.match(read('overlay.js'), /web-app\.html/);
   assert.match(read('content.js'), /event\.code === 'Space'/);
   assert.match(js, /matches\('input, textarea, select/);
+});
+
+test('extension bundle contains an independent copy of the Web app', () => {
+  assert.ok(fs.existsSync(path.join(root, 'extension', 'web-app.html')));
+  assert.ok(fs.existsSync(path.join(root, 'extension', 'web-app.js')));
+  assert.match(read('web-app.html'), /<script src="web-app\.js"><\/script>/);
 });

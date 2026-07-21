@@ -1,0 +1,1528 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1 1'%3E%3C/svg%3E" type="image/svg+xml">
+    <title>Mineparser — Prompt and command launcher</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            background: transparent;
+        }
+
+        .launcher-marker {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 64px;
+            height: 32px;
+            border: 1px solid rgba(255,255,255,.28);
+            border-radius: 12px;
+            background: rgba(18,22,30,.42);
+            color: rgba(255,255,255,.9);
+            font-size: 17px;
+            cursor: pointer;
+            box-shadow: 0 5px 18px rgba(0,0,0,.2);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+        }
+        .launcher-marker:hover { background: rgba(40,90,130,.62); }
+        .app-toolbar {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 8px;
+        }
+        .collapse-app-btn {
+            padding: 6px 12px;
+            border: 1px solid rgba(255,255,255,.16);
+            border-radius: 7px;
+            background: rgba(30,35,45,.72);
+            color: #d9e2ef;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .collapse-app-btn:hover { background: rgba(40,90,130,.82); }
+        .web-shortcuts {
+            display: none;
+            position: fixed;
+            right: 18px;
+            bottom: 18px;
+            z-index: 20;
+            width: min(290px, calc(100vw - 36px));
+            padding: 14px 16px;
+            border: 1px solid rgba(255,255,255,.2);
+            border-radius: 14px;
+            color: #eaf3ff;
+            background: rgba(7, 15, 28, .76);
+            box-shadow: 0 12px 34px rgba(0,0,0,.34);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        body.web-mode .web-shortcuts { display: block; }
+        body.marker-collapsed .web-shortcuts { display: none; }
+        .web-shortcuts-title { margin-bottom: 8px; color: #54d6ff; font-size: 13px; font-weight: 800; }
+        .web-shortcuts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px 12px; font-size: 12px; }
+        .web-shortcuts kbd { padding: 2px 5px; border: 1px solid #52749a; border-radius: 4px; background: #17283f; color: #fff; font-family: inherit; }
+        @media (max-width: 700px) {
+            .web-shortcuts { position: static; margin: 10px 6px 0; width: auto; }
+            body.web-mode:not(.marker-collapsed) .web-shortcuts { display: block; }
+            .launcher-marker { position: fixed; right: 12px; bottom: 12px; left: auto; top: auto; z-index: 30; }
+        }
+        body.marker-collapsed .container { display: none; }
+        body.marker-collapsed .launcher-marker { display: flex; }
+        body:not(.marker-collapsed) .launcher-marker { display: none; }
+
+        body {
+            font-family: 'Segoe UI', 'Meiryo', sans-serif;
+            background: transparent;
+            color: #cccccc;
+            padding: 10px;
+            margin: 0;
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+        body.web-mode {
+            background: #0a1220 url('assets/mineparser-mountain-bg.png') center / cover fixed no-repeat;
+        }
+        body.web-mode::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            opacity: .22;
+            background: linear-gradient(180deg, rgba(4,9,18,.10), rgba(4,9,18,.48));
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            max-width: none;
+            min-height: calc(100vh - 20px);
+            margin: 0;
+            background: rgba(18, 22, 30, 0.34);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 18px;
+            box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+            backdrop-filter: blur(7px) saturate(115%);
+            -webkit-backdrop-filter: blur(7px) saturate(115%);
+            padding: 12px 16px 0 16px;
+            box-sizing: border-box;
+        }
+
+        /* 上部ヘッダー領域も透過させ、背後の文章を確認できるようにする */
+        .search-label,
+        .fkey-row,
+        .search-section { background: transparent !important; }
+
+        /* メインコンテンツラッパー: 左=検索+キーボード、右=パネルを画面上部まで伸ばす */
+        .main-content-wrapper {
+            display: grid;
+            grid-template-columns: minmax(0, minmax(300px, 52%)) minmax(0, 1fr);
+            grid-template-rows: 1fr;
+            flex: 1 1 0;
+            min-height: 0;
+            min-width: 0;
+            width: 100%;
+            max-width: 100%;
+        }
+
+        @media (min-width: 901px) and (orientation: landscape) {
+            .main-content-wrapper { grid-template-columns: minmax(0, 58%) minmax(0, 42%); }
+        }
+
+        /* 左列: 検索＋エラー＋キーボードを縦に積み、コンパクトに */
+        .left-column {
+            grid-column: 1;
+            grid-row: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            min-height: 0;
+            gap: 6px;
+        }
+
+        .search-section {
+            flex-shrink: 0;
+            width: 100%;
+            margin-bottom: 0;
+        }
+
+
+        .search-label {
+            font-size: 12px;
+            color: #858585;
+            margin-bottom: 3px;
+        }
+
+        .search-bar {
+            position: relative;
+        }
+
+        .search-bar[data-mode="nav"] .search-input {
+            border-left: 3px solid #007acc;
+        }
+
+        .search-bar[data-mode="edit"] .search-input {
+            border-left: 3px solid #4ec9b0;
+        }
+
+        .search-mode-badge {
+            font-size: 13px;
+            padding: 2px 7px;
+            border-radius: 5px;
+            margin-left: 10px;
+        }
+
+        /* WCAG 2.1 AA 通常テキスト 4.5:1 以上で視認性を確保 */
+        .search-mode-badge[data-mode="nav"] {
+            background: #0e639c;
+            color: #ffffff;
+        }
+
+        .search-mode-badge[data-mode="edit"] {
+            background: #1e5631;
+            color: #ffffff;
+        }
+
+        .search-input {
+            width: 100%;
+            min-height: 36px;
+            max-height: 40px;
+            padding: 6px 12px;
+            background: #3c3c3c;
+            border: 1px solid #3c3c3c;
+            border-radius: 4px;
+            color: #cccccc;
+            font-size: 14px;
+            line-height: 1.4;
+            outline: none;
+        }
+
+        .search-input:focus {
+            border-color: #007acc;
+            background: #404040;
+            box-shadow: 0 0 0 2px rgba(0, 122, 204, 0.4);
+        }
+
+        .help-hint-btn {
+            padding: 4px 10px;
+            font-size: 12px;
+            background: #3c3c3c;
+            border: 1px solid #555;
+            border-radius: 4px;
+            color: #cccccc;
+            cursor: pointer;
+        }
+        .help-hint-btn:hover {
+            background: #4a4a4a;
+            border-color: #007acc;
+        }
+
+        /* F1〜F6 ショートカットボタン行（表示サイズ 1.2倍） */
+        .fkey-row {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 7px;
+            flex-wrap: wrap;
+            min-width: 0;
+        }
+        /* WCAG 2.1 AA 通常テキスト 4.5:1 以上で視認性を確保 */
+        .fkey-btn {
+            padding: 5px 10px;
+            font-size: 13px;
+            min-width: 43px;
+            background: #3c3c3c;
+            border: 1px solid #555;
+            border-radius: 5px;
+            color: #e0e0e0;
+            cursor: pointer;
+            white-space: normal;
+            overflow-wrap: anywhere;
+            line-height: 1.2;
+        }
+        .fkey-btn:hover {
+            background: #4a4a4a;
+            border-color: #555;
+        }
+        .fkey-btn-help {
+            background: #0e639c;
+            border-color: #1177bb;
+            color: #ffffff;
+        }
+        .fkey-btn-help:hover {
+            background: #1177bb;
+            border-color: #1177bb;
+        }
+        .fkey-btn-setting {
+            background: #5a3d7a;
+            border-color: #6a4d8a;
+            color: #ffffff;
+        }
+        .fkey-btn-setting:hover {
+            background: #6a4d8a;
+            border-color: #6a4d8a;
+        }
+        .fkey-btn-mode {
+            background: #404055;
+            border-color: #505065;
+            color: #e8e8e8;
+        }
+        .fkey-btn-mode:hover {
+            background: #505065;
+            border-color: #505065;
+        }
+        .fkey-btn-placeholder {
+            color: #c0c0c0;
+            cursor: default;
+        }
+        .fkey-btn-placeholder:hover {
+            background: #3c3c3c;
+            border-color: #555;
+        }
+        .fkey-btn-export {
+            background: #2d6a4a;
+            border-color: #3d7a5a;
+            color: #ffffff;
+        }
+        .fkey-btn-export:hover {
+            background: #3d7a5a;
+            border-color: #3d7a5a;
+        }
+        .fkey-btn-import {
+            background: #a65c2e;
+            border-color: #b86c3e;
+            color: #ffffff;
+        }
+        .fkey-btn-import:hover {
+            background: #b86c3e;
+            border-color: #b86c3e;
+        }
+        /* ファイル選択 input: display:none だとプログラム的 click() でダイアログが開かない環境があるため、視覚のみ隠す */
+        .visually-hidden-file-input {
+            position: absolute;
+            left: -9999px;
+            top: 0;
+            width: 0.1px;
+            height: 0.1px;
+            opacity: 0;
+            overflow: hidden;
+        }
+        .fkey-row-label {
+            font-size: 13px;
+            color: #858585;
+            margin-right: 2px;
+        }
+        .fkey-shortcut-select {
+            padding: 2px 7px;
+            font-size: 13px;
+            min-width: 58px;
+            background: #3c3c3c;
+            border: 1px solid #555;
+            border-radius: 5px;
+            color: #cccccc;
+            margin-right: 5px;
+        }
+        .fkey-shortcut-select:focus {
+            outline: none;
+            border-color: #007acc;
+        }
+
+        /* キーボードレイアウト（左列内・残り高さを占有） */
+        .keyboard-section {
+            /* The keyboard is the navigation surface; never allow the flex layout
+               to collapse it when the preview panel grows on small screens. */
+            flex: 0 0 auto;
+            min-height: 0;
+            min-width: 0;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 統合パネル（右列・画面上部まで伸ばす・data-modeでNav/Edit切り替え） */
+        .autocomplete-panel {
+            grid-column: 2;
+            grid-row: 1;
+            min-width: 0;
+            min-height: 0;
+            align-self: stretch;
+            border: none;
+            border-radius: 0 8px 8px 0;
+            border-left: none;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            padding: 14px;
+            box-sizing: border-box;
+        }
+
+        .autocomplete-panel-title {
+            display: none; /* タイトルバー（〇層目の〇 — Nav: 名前）を非表示 */
+            font-size: 12px;
+            color: #858585;
+            padding: 8px 12px;
+            border-bottom: 1px solid #3c3c3c;
+        }
+
+        .autocomplete-dropdown {
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow-y: auto;
+            display: none;
+            background: #2d2d30;
+        }
+
+        .autocomplete-dropdown.show {
+            display: block;
+        }
+
+        .autocomplete-item {
+            padding: 8px 16px;
+            cursor: pointer;
+            border-bottom: 1px solid #3c3c3c;
+        }
+
+        .autocomplete-item:hover,
+        .autocomplete-item.selected {
+            background: #094771;
+        }
+
+        .autocomplete-item:last-child {
+            border-bottom: none;
+        }
+
+        .autocomplete-item.predicted-item {
+            background: #2d4a2d;
+            border-left: 3px solid #4caf50;
+        }
+
+        .autocomplete-item.predicted-item:hover,
+        .autocomplete-item.predicted-item.selected {
+            background: #3d5a3d;
+        }
+
+        .autocomplete-item.disabled-item {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: #2d2d2d;
+        }
+
+        .autocomplete-item.disabled-item:hover {
+            background: #2d2d2d;
+        }
+
+        .predicted-label {
+            font-size: 11px;
+            color: #4caf50;
+            margin-left: 8px;
+            opacity: 0.8;
+        }
+
+        /* keyboard-section の flex は上で定義済み */
+
+        .keyboard-title {
+            font-size: 14px;
+            color: #cccccc;
+            margin-bottom: 6px;
+        }
+
+        /* Keyboard width follows the available preview area. */
+        .keyboard {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            align-items: center;
+            align-self: flex-start;
+            width: var(--keyboard-width, 637px);
+            box-sizing: border-box;
+            background: #2d2d30;
+            padding: 24px 2px 6px;
+            border-radius: 8px;
+            overflow: visible;
+            flex: 0 0 auto;
+        }
+
+        .keyboard-row {
+            display: flex;
+            gap: 2px;
+            justify-content: center;
+            width: fit-content;
+        }
+
+        .keyboard-row.row2 {
+            padding-left: 15px;
+        }
+
+        .keyboard-row.row3 {
+            padding-left: 27px;
+        }
+
+        .keyboard-row.row0 {
+            margin-bottom: 5px;
+        }
+
+        .key {
+            position: relative;
+            width: var(--key-size, 61.1px);
+            height: var(--key-size, 61.1px);
+            flex-shrink: 0;
+            background: #3c3c3c;
+            border: 1px solid #555;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 500;
+            color: #cccccc;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .key > span:first-child {
+            position: relative;
+            z-index: 5;
+        }
+
+        .key:hover {
+            background: #4a4a4a;
+            border-color: #666;
+        }
+
+        .key.bound {
+            background: #0e639c;
+            border-color: #007acc;
+            color: #ffffff;
+        }
+
+        .key.bound:hover {
+            background: #1177bb;
+        }
+
+        .key.unbound {
+            background: #2d2d30;
+            border-color: #3c3c3c;
+            color: #858585;
+            pointer-events: none;
+        }
+
+        .key-label {
+            position: absolute;
+            top: -18px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 11px;
+            z-index: 5;
+            color: #4ec9b0;
+            white-space: nowrap;
+            max-width: none;
+            overflow: visible;
+            text-overflow: clip;
+            text-align: center;
+            background: #1e1e1e;
+            padding: 1px 4px;
+            border-radius: 3px;
+            pointer-events: none;
+        }
+
+        .key.unbound .key-label {
+            color: #858585;
+        }
+
+        @media (max-width: 900px) {
+            body { padding: 6px; }
+            .container { padding: 10px; border-radius: 12px; }
+            .main-content-wrapper { display: flex; flex-direction: column; gap: 10px; flex: 0 0 auto; min-height: auto; }
+            .left-column { width: 100%; flex: 0 0 auto; min-height: auto; }
+            .autocomplete-panel { min-height: 260px; padding: 8px; }
+            .keyboard-section { overflow-x: auto; min-height: 0; }
+            .keyboard { width: max-content; min-width: 100%; transform-origin: left top; }
+            .fkey-row { gap: 4px; }
+            .fkey-btn { min-width: auto; padding: 6px 7px; font-size: 11px; }
+            .fkey-row { width: 100%; }
+            .fkey-btn { flex: 1 1 92px; }
+            .search-input { min-height: 42px; font-size: 16px; }
+            .key { width: var(--key-size, 34px); height: var(--key-size, 34px); }
+        }
+
+        /* Narrow phones still use the keyboard as the primary navigation surface. */
+        @media (max-width: 420px) {
+            .keyboard-section { display: flex; min-height: 0; }
+            .keyboard { gap: 14px; padding: 20px 2px 6px; }
+            .keyboard-row { gap: 1px; }
+            .keyboard-row.row2 { padding-left: 8px; }
+            .keyboard-row.row3 { padding-left: 14px; }
+            .keyboard-row.row0 { margin-bottom: 2px; }
+            .key-label {
+                top: -13px;
+                max-width: none;
+                font-size: clamp(7px, calc(var(--key-size, 34px) * 0.18), 11px);
+                line-height: 1;
+            }
+            .autocomplete-panel { min-height: 220px; }
+        }
+
+        /* 未割り当てキー押下時の一瞬の赤フィードバック */
+        .key.key-error {
+            background: #c0392b !important;
+            border-color: #e74c3c;
+            box-shadow: 0 0 8px rgba(231, 76, 60, 0.6);
+            transition: background 0.1s, border-color 0.1s, box-shadow 0.1s;
+        }
+
+        /* 貼り付け先に選んだキー */
+        .key.paste-target {
+            outline: 2px solid #4ec9b0;
+            outline-offset: 2px;
+            box-shadow: 0 0 0 4px rgba(78, 201, 176, 0.3);
+        }
+
+        /* 点はキー文字の背後に配置（z-index を文字より低く） */
+        .key-indicator {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .key-indicator::before {
+            content: '●';
+            display: block;
+        }
+
+        .key-indicator.empty {
+            display: none;
+        }
+
+        /* 第1段階: 大きさのみ（1-200→small, 201-400→medium, 401-600→large, 601-800→xlarge） */
+        .key-indicator.small {
+            font-size: 6px;
+            color: #6a9fb5;
+        }
+
+        .key-indicator.medium {
+            font-size: 10px;
+            color: #6a9fb5;
+        }
+
+        .key-indicator.large {
+            font-size: 14px;
+            color: #6a9fb5;
+        }
+
+        .key-indicator.xlarge {
+            font-size: 18px;
+            color: #6a9fb5;
+        }
+
+        /* 第2段階: 最大サイズのまま、200刻みで色が変わる（801-1000, 1001-1200, …） */
+        .key-indicator.xlarge.color-1 { color: #6a9fb5; }
+        .key-indicator.xlarge.color-2 { color: #5eb3f0; }
+        .key-indicator.xlarge.color-3 { color: #4ec9b0; }
+        .key-indicator.xlarge.color-4 { color: #dcdcaa; }
+        .key-indicator.xlarge.color-5 { color: #ce9178; }
+        .key-indicator.xlarge.color-6 { color: #ffa500; }
+        .key-indicator.xlarge.color-7 { color: #f14c4c; }
+        .key-indicator.xlarge.color-8 { color: #ff4444; }
+        .key-indicator.xlarge.color-9 { color: #ff0000; }
+
+        /* パネル内: 編集時=候補表示・ナビブロック非表示 / ナビ時=ナビブロック表示・候補非表示 */
+        .autocomplete-panel[data-mode="edit"] .autocomplete-dropdown { display: block; }
+        .autocomplete-panel[data-mode="nav"] .autocomplete-dropdown { display: none !important; }
+        .autocomplete-panel[data-mode="nav"] .panel-content-nav { display: flex; flex: 1 1 0; min-height: 0; overflow: auto; }
+        .autocomplete-panel[data-mode="edit"] .panel-content-nav { display: none !important; }
+
+        /* 文字列設定ブロック：常にパネル幅いっぱい・画面下まで伸ばす（文字列の有無に依存しない） */
+        .panel-content-nav {
+            border: none;
+            border-left: none;
+            background: #383838;
+            border-radius: 6px;
+            cursor: pointer;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            flex: 1 1 0;
+            min-height: 0;
+            width: 100%;
+            height: 100%;
+            box-shadow: none;
+            padding-bottom: 10px;
+            box-sizing: border-box;
+        }
+        /* 選択時（フォーカス）の外枠をまわりの背景色と同じにして目立たなくする（outline + box-shadow の両方を上書き） */
+        .panel-content-nav:focus,
+        .panel-content-nav:focus-visible {
+            outline: 2px solid #2d2d30 !important;
+            outline-offset: 0 !important;
+            box-shadow: none !important;
+        }
+        .panel-content-nav:focus:hover,
+        .panel-content-nav:focus-visible:hover {
+            outline-color: #2d2d30 !important;
+            box-shadow: none !important;
+        }
+        .panel-content-nav.copy-feedback:focus,
+        .panel-content-nav.copy-feedback:focus:hover,
+        .panel-content-nav.copy-feedback:focus-visible {
+            outline-color: #0e639c !important;
+        }
+        .panel-content-nav.copy-feedback-error:focus,
+        .panel-content-nav.copy-feedback-error:focus:hover,
+        .panel-content-nav.copy-feedback-error:focus-visible {
+            outline-color: #5a1e1e !important;
+        }
+
+        .panel-nav-label {
+            font-size: 16px;
+            line-height: 1.5;
+            padding: 10px 14px;
+            color: #e0e0e0;
+            border-bottom: 1px solid #555;
+            background: linear-gradient(180deg, #404040 0%, #353535 100%);
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            flex-shrink: 0;
+        }
+
+        .panel-content-string {
+            font-size: 12px;
+            line-height: 1.5;
+            padding: 10px 12px 14px 12px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            word-break: break-all;
+            color: #e0e0e0;
+            overflow-y: auto;
+            flex: 1 1 auto;
+            min-height: 0;
+        }
+
+        .panel-content-nav:hover {
+            background: #3d3d3d;
+            border-color: #3d3d3d;
+            border-left-color: #3d3d3d;
+        }
+
+        .panel-content-nav:hover .panel-nav-label {
+            background: linear-gradient(180deg, #454545 0%, #3a3a3a 100%);
+            color: #f0f0f0;
+        }
+
+        .panel-content-nav.copy-feedback {
+            background: #0e639c !important;
+            border-color: #0e639c;
+            border-left-color: #0e639c;
+            transition: background-color 0.15s, border-color 0.15s;
+        }
+
+        .panel-content-nav.copy-feedback .panel-nav-label {
+            background: #0d5a8f;
+            color: #fff;
+        }
+
+        .panel-content-nav.copy-feedback-error {
+            background: #5a1e1e !important;
+            border-color: #5a1e1e;
+            border-left-color: #5a1e1e;
+            transition: background-color 0.15s, border-color 0.15s;
+        }
+
+        .panel-content-nav.copy-feedback-error .panel-nav-label {
+            background: #4a1818;
+            color: #f5c6c6;
+        }
+
+        /* 右パネル：表示エリアのキャプション（編集はモーダルで行う旨） */
+        .panel-view-caption {
+            font-size: 11px;
+            color: #888;
+            margin-bottom: 6px;
+            flex-shrink: 0;
+        }
+        .panel-edit-row {
+            margin-top: 14px;
+            flex-shrink: 0;
+        }
+        .panel-edit-btn {
+            padding: 6px 14px;
+            font-size: 13px;
+            background: #0e639c;
+            color: #fff;
+            border: 1px solid #1a7bc4;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .panel-edit-btn:hover {
+            background: #1a7bc4;
+            border-color: #2a8bd4;
+        }
+        /* 編集ボタンは非表示（編集はモーダル・ダブルクリック・キーで行う） */
+        .panel-edit-row { display: none !important; }
+        .autocomplete-panel[data-mode="edit"] .panel-view-caption,
+        .autocomplete-panel[data-mode="edit"] .panel-edit-row { display: none !important; }
+
+        /* キー未割り当てエラー表示 */
+        #keyFeedback {
+            font-size: 12px;
+            color: #f48771;
+            margin-top: 8px;
+            min-height: 20px;
+        }
+        #keyFeedback.show {
+            padding: 6px 10px;
+            background: #5a1e1e;
+            border-radius: 4px;
+        }
+        #breadcrumbNav {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            padding: 6px 10px;
+            background: #2d2d2d;
+            border-radius: 4px;
+            margin-top: 6px;
+            min-height: 20px;
+        }
+        #breadcrumbNav .breadcrumb-item {
+            color: #007acc;
+            text-decoration: none;
+            margin-right: 5px;
+            cursor: pointer;
+        }
+        #breadcrumbNav .breadcrumb-item:hover {
+            text-decoration: underline;
+        }
+        #breadcrumbNav .breadcrumb-separator {
+            color: #858585;
+            margin-right: 5px;
+        }
+        #breadcrumbNav .breadcrumb-current {
+            color: #cccccc;
+            font-weight: 600;
+            margin-right: 5px;
+        }
+
+        /* キーバインド設定ダイアログ（全画面・ヘッダーにタイトルとボタン） */
+        .bind-dialog {
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            background: #252526;
+            border: none;
+            z-index: 1000;
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .bind-dialog.show {
+            display: flex;
+        }
+
+        .bind-dialog-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+            padding: 16px 24px;
+            border-bottom: 1px solid #3c3c3c;
+            gap: 16px;
+        }
+
+        .bind-dialog-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #cccccc;
+            margin: 0;
+            flex-shrink: 0;
+        }
+
+        .bind-dialog-header .bind-dialog-buttons {
+            margin: 0;
+        }
+
+        .bind-dialog-body {
+            flex: 1 1 0;
+            min-height: 0;
+            overflow-y: auto;
+            padding: 24px 32px 32px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .bind-dialog-label {
+            font-size: 15px;
+            color: #858585;
+            margin-bottom: 16px;
+        }
+
+        .bind-dialog-section {
+            margin-bottom: 22px;
+            flex-shrink: 0;
+        }
+
+        /* 設定文字列セクション：残りスペースいっぱいに伸ばす */
+        .bind-dialog-section:has(.bind-dialog-textarea) {
+            flex: 1 1 0;
+            min-height: 0;
+            margin-bottom: 22px;
+            display: flex;
+            flex-direction: column;
+            overflow: auto;
+        }
+
+        .bind-dialog-section:has(.bind-dialog-textarea) .bind-dialog-section-title,
+        .bind-dialog-section:has(.bind-dialog-textarea) .bind-dialog-section-desc {
+            flex-shrink: 0;
+        }
+
+        .bind-dialog-section-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #cccccc;
+            margin-bottom: 6px;
+        }
+
+        .bind-dialog-section-desc {
+            font-size: 13px;
+            color: #858585;
+            margin-bottom: 10px;
+            line-height: 1.45;
+        }
+
+        .bind-dialog-input,
+        .bind-dialog-textarea {
+            width: 100%;
+            padding: 10px 14px;
+            background: #3c3c3c;
+            border: 1px solid #3c3c3c;
+            border-radius: 4px;
+            color: #cccccc;
+            font-size: 15px;
+            font-family: inherit;
+            outline: none;
+        }
+
+        .bind-dialog-input:focus,
+        .bind-dialog-textarea:focus {
+            border-color: #007acc;
+            background: #404040;
+        }
+
+        .bind-dialog-textarea {
+            flex: 1 1 0;
+            min-height: 280px;
+            resize: vertical;
+            font-family: 'Consolas', 'Monaco', monospace;
+            line-height: 1.5;
+        }
+
+        .bind-dialog-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            flex-shrink: 0;
+        }
+
+        .bind-dialog-button {
+            padding: 10px 18px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 15px;
+        }
+
+        .bind-dialog-button.primary {
+            background: #007acc;
+            color: #ffffff;
+        }
+
+        .bind-dialog-button.primary:hover {
+            background: #1177bb;
+        }
+
+        .bind-dialog-button.secondary {
+            background: #3c3c3c;
+            color: #cccccc;
+        }
+
+        .bind-dialog-button.secondary:hover {
+            background: #4a4a4a;
+        }
+
+        .loading {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        /* ヘルプモーダル（F1で表示、Escape/閉じる/オーバーレイクリックで閉じる） */
+        .help-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 998;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+        .help-modal-overlay.show {
+            display: flex;
+        }
+        .help-modal {
+            background: #252526;
+            border: 1px solid #3c3c3c;
+            border-radius: 8px;
+            padding: 32px 40px;
+            width: min(92vw, 900px);
+            max-width: 900px;
+            max-height: 88vh;
+            overflow-y: auto;
+            z-index: 999;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+        }
+        .help-modal .help-modal-title {
+            font-size: 22px;
+            font-weight: 600;
+            color: #cccccc;
+            margin-bottom: 24px;
+        }
+        .help-modal .help-modal-body {
+            font-size: 14px;
+            color: #cccccc;
+            line-height: 1.75;
+        }
+        .help-modal .help-modal-body kbd {
+            display: inline-block;
+            padding: 2px 6px;
+            background: #3c3c3c;
+            border-radius: 3px;
+            font-family: monospace;
+            margin-right: 4px;
+        }
+        .help-modal .help-modal-body > div {
+            margin-bottom: 10px;
+        }
+        .help-modal .help-section {
+            margin-top: 22px;
+            margin-bottom: 14px;
+            font-size: 15px;
+            font-weight: 600;
+            color: #4ec9b0;
+        }
+        .help-modal .help-section:first-of-type {
+            margin-top: 0;
+        }
+        .help-modal-close {
+            margin-top: 20px;
+            padding: 8px 20px;
+            background: #007acc;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .help-modal-close:hover {
+            background: #1177bb;
+        }
+
+        /* テンキー設定モーダル（F4で表示） */
+        .tenkey-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 998;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+        .tenkey-modal-overlay.show {
+            display: flex;
+        }
+        .tenkey-modal {
+            background: #252526;
+            border: 1px solid #3c3c3c;
+            border-radius: 8px;
+            padding: 24px;
+            max-width: min(92vw, 420px);
+            max-height: 90vh;
+            overflow-y: auto;
+            z-index: 999;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+        }
+        .tenkey-modal .tenkey-modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #cccccc;
+            margin-bottom: 16px;
+        }
+        .tenkey-modal-choices {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .tenkey-modal-choices button {
+            flex: 1 1 auto;
+            min-width: 80px;
+            padding: 12px 16px;
+            font-size: 14px;
+            background: #3c3c3c;
+            border: 1px solid #555;
+            border-radius: 4px;
+            color: #cccccc;
+            cursor: pointer;
+        }
+        .tenkey-modal-choices button:hover {
+            background: #4a4a4a;
+            border-color: #666;
+        }
+        .tenkey-modal-choices button.active {
+            background: #0e639c;
+            border-color: #007acc;
+            color: #fff;
+        }
+        .tenkey-modal-close {
+            display: block;
+            margin-top: 8px;
+            padding: 8px 20px;
+            background: #007acc;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .tenkey-modal-close:hover {
+            background: #1177bb;
+        }
+
+        /* 設定モーダル（F5で表示） */
+        .setting-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 998;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+        .setting-modal-overlay.show {
+            display: flex;
+        }
+        .setting-modal {
+            background: #252526;
+            border: 1px solid #3c3c3c;
+            border-radius: 8px;
+            padding: 24px;
+            width: min(420px, calc(100vw - 32px));
+            max-height: min(560px, calc(100vh - 32px));
+            overflow-y: auto;
+            z-index: 999;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+        }
+        .setting-modal .setting-modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #cccccc;
+            margin-bottom: 16px;
+        }
+        .setting-modal-body {
+            color: #9d9d9d;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+        .setting-modal-body .setting-row {
+            margin-bottom: 12px;
+        }
+        .setting-modal-body .setting-row label {
+            display: block;
+            margin-bottom: 4px;
+            color: #cccccc;
+        }
+        .setting-modal-body .setting-row select {
+            width: 100%;
+            min-height: 42px;
+            padding: 8px 12px;
+            background: #3c3c3c;
+            color: #cccccc;
+            border: 1px solid #555;
+            border-radius: 4px;
+            font-size: 14px;
+            color-scheme: dark;
+        }
+        .setting-modal-body .setting-row select,
+        .setting-modal-body .setting-row select:focus,
+        .setting-modal-body .setting-row select option {
+            background-color: #172235 !important;
+            color: #f4f7fb !important;
+        }
+        .setting-modal-body .setting-row select {
+            border-color: #5b7da5 !important;
+            box-shadow: 0 0 0 1px rgba(84,214,255,.12);
+        }
+        .setting-modal-body .setting-row select:focus {
+            border-color: #54d6ff !important;
+            box-shadow: 0 0 0 3px rgba(84,214,255,.22);
+            outline: none;
+        }
+        .help-modal, .tenkey-modal, .setting-modal, .mode-modal {
+            width: min(560px, calc(100vw - 32px));
+            max-height: min(680px, calc(100vh - 32px));
+            overflow: auto;
+        }
+        .help-modal-body, .tenkey-modal-choices, .mode-modal-body { min-width: 0; overflow-wrap: anywhere; }
+        .mode-choice { min-width: 0; }
+        .setting-modal-close {
+            display: block;
+            margin-top: 8px;
+            width: 100%;
+            padding: 8px 20px;
+            background: #007acc;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .setting-modal-close:hover {
+            background: #1177bb;
+        }
+
+        /* モードモーダル（F6で表示） */
+        .mode-modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 998;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+        .mode-modal-overlay.show {
+            display: flex;
+        }
+        .mode-modal {
+            background: #252526;
+            border: 1px solid #3c3c3c;
+            border-radius: 8px;
+            padding: 24px;
+            max-width: 360px;
+            z-index: 999;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+        }
+        .mode-modal .mode-modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #cccccc;
+            margin-bottom: 16px;
+        }
+        .mode-modal-body {
+            color: #9d9d9d;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+        .mode-choice { display: flex; gap: 10px; align-items: flex-start; padding: 10px; margin: 8px 0; border: 1px solid #3c3c3c; border-radius: 6px; cursor: pointer; }
+        .mode-choice:has(input:checked) { border-color: #007acc; background: rgba(0, 122, 204, 0.16); }
+        .mode-choice input { margin-top: 4px; }
+        .mode-choice strong { display: block; color: #ddd; }
+        .mode-choice small { color: #999; }
+        .mode-modal-close {
+            display: block;
+            margin-top: 8px;
+            padding: 8px 20px;
+            background: #007acc;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .mode-modal-close:hover {
+            background: #1177bb;
+        }
+        /* 背景を確認できるガラス調の表示面 */
+        .container,
+        .search-input,
+        .keyboard-section,
+        .keyboard,
+        .autocomplete-panel,
+        .panel-content-nav,
+        .panel-nav-label,
+        .panel-content-string,
+        .autocomplete-dropdown,
+        .autocomplete-item {
+            background: rgba(22, 27, 36, 0.20) !important;
+            backdrop-filter: blur(3px);
+            -webkit-backdrop-filter: blur(3px);
+        }
+
+        .search-input,
+        .bind-dialog-input,
+        .setting-modal-body .setting-row select {
+            background: rgba(10, 14, 20, 0.18) !important;
+            border-color: rgba(255, 255, 255, 0.18);
+        }
+
+        .search-input:focus,
+        .bind-dialog-input:focus,
+        .setting-modal-body .setting-row select:focus {
+            background: rgba(10, 14, 20, 0.24) !important;
+        }
+        .setting-help-text {
+            margin-top: 8px;
+            color: #8f9bad;
+            font-size: 12px;
+            line-height: 1.45;
+        }
+        .app-only-setting { display: none; }
+        body.tauri-mode .app-only-setting { display: block; }
+
+        .keyboard-title,
+        .autocomplete-panel-title,
+        .panel-view-caption {
+            background: rgba(18, 22, 30, 0.16) !important;
+        }
+
+        .keyboard button,
+        .keyboard .key,
+        .autocomplete-item {
+            background: rgba(60, 64, 74, 0.24) !important;
+        }
+
+        .keyboard button:hover,
+        .keyboard .key:hover,
+        .autocomplete-item:hover,
+        .panel-content-nav:hover {
+            background: rgba(70, 130, 175, 0.34) !important;
+        }
+
+        .panel-content-nav.copy-feedback {
+            background: rgba(14, 99, 156, 0.48) !important;
+        }
+
+        .panel-content-nav.copy-feedback-error {
+            background: rgba(90, 30, 30, 0.48) !important;
+        }
+
+        .search-mode-badge {
+            opacity: 0.72;
+        }
+    </style>
+</head>
+<body>
+    <button class="launcher-marker" id="launcherMarker" aria-label="Open Mineparser" title="Open Mineparser">◆</button>
+    <div class="container">
+        <div class="app-toolbar">
+            <button type="button" class="collapse-app-btn" id="collapseAppButton">Collapse</button>
+        </div>
+        <!-- ラッパー: 幅を検索行に合わせ、右パネルをMode(F6)右端に揃える -->
+        <div class="main-content-wrapper">
+            <div class="left-column">
+            <!-- 検索行: ラッパー幅の基準（Mode(F6)右端まで） -->
+            <div class="search-section">
+                <div class="search-label" style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                    <span id="searchModeBadge" class="search-mode-badge" data-mode="nav" aria-live="polite">Nav</span>
+                    <div class="fkey-row" role="group" aria-label="Function key shortcuts">
+                        <button type="button" id="keybindHelpHint" class="fkey-btn fkey-btn-help" data-f="1" tabindex="0" aria-label="Show help (F1)" title="Help (F1)">Help (F1)</button>
+                        <button type="button" class="fkey-btn fkey-btn-export" data-f="2" tabindex="0" aria-label="Export (F2)" title="Export (F2)">Export (F2)</button>
+                        <label for="importFileInput" class="fkey-btn fkey-btn-import" data-f="3" tabindex="0" aria-label="Import (F3)" title="Import (F3)" role="button">Import (F3)</label>
+                        <button type="button" class="fkey-btn fkey-btn-tenkey" data-f="4" tabindex="0" aria-label="Keyboard (F4)" title="Keyboard (F4)">F4 Keyboard(F4)</button>
+                        <button type="button" class="fkey-btn fkey-btn-setting" data-f="5" tabindex="0" aria-label="Setting (F5)" title="Setting (F5)">Setting (F5)</button>
+                        <button type="button" class="fkey-btn fkey-btn-mode" data-f="6" tabindex="0" aria-label="Mode (F6)" title="Mode (F6)">Mode (F6)</button>
+                    </div>
+                    <!-- ファイル選択は display:none だと一部環境でダイアログが開かないため、視覚的に隠す -->
+                    <input type="file" id="importFileInput" accept=".json" class="visually-hidden-file-input" aria-hidden="true" tabindex="-1">
+                </div>
+                <div class="search-bar" data-mode="nav">
+                    <input type="text" class="search-input" placeholder="Type to search or navigate..." id="searchInput">
+                </div>
+                <div class="search-label" style="margin-top:5px;">Try typing a keyword, or press a mapped key to navigate.</div>
+                <div id="keyFeedback" aria-live="polite"></div>
+                <div id="breadcrumbNav" style="display: none;" aria-label="Breadcrumb navigation"></div>
+            </div>
+            <div class="keyboard-section" id="keyboardSection" data-mode="qwerty">
+                <div class="keyboard" id="keyboardContainer"></div>
+            </div>
+            </div>
+            <div class="autocomplete-panel" id="autocompletePanel">
+                <div class="panel-content-nav" id="panelContentNav" tabindex="0" role="button" aria-label="Copy saved text to clipboard">
+                    <div class="panel-nav-label" id="panelNavLabel">Nav:</div>
+                    <div class="panel-content-string" id="panelContentString"></div>
+                </div>
+                <div class="autocomplete-panel-title" id="autocomplete-panel-title">Suggestions</div>
+                <div class="autocomplete-dropdown" id="autocomplete"></div>
+            </div>
+        </div>
+
+        <!-- ヘルプモーダル（F1で開く・Escape/閉じる/オーバーレイクリックで閉じる） -->
+        <div class="help-modal-overlay" id="helpModalOverlay" aria-hidden="true">
+            <div class="help-modal" id="helpModal" role="dialog" aria-labelledby="helpModalTitle" aria-modal="true">
+                <div class="help-modal-title" id="helpModalTitle">Keyboard shortcuts</div>
+                <div class="help-modal-body">
+                    <div class="keybind-help-layer-desc" style="margin-bottom:14px; padding:10px; background:#2d2d30; border-radius:4px;">
+                        <strong>Level 1 (category)</strong> — A top-level group such as tools, languages, or templates.<br>
+                        <strong>Level 2 (item)</strong> — A reusable prompt or command returned when selected.
+                    </div>
+
+                    <div class="help-section">Function keys</div>
+                    <div id="helpLineShortcut"><kbd>F1</kbd> Toggle help</div>
+                    <div><kbd>F2</kbd> Export JSON</div>
+                    <div><kbd>F3</kbd> Import JSON</div>
+                    <div><kbd>F4</kbd> Change keyboard layout</div>
+                    <div><kbd>F5</kbd> Open settings</div>
+                    <div><kbd>F6</kbd> Choose copy/paste mode</div>
+
+                    <div class="help-section">Search</div>
+                    <div><kbd>Ctrl</kbd>+<kbd>K</kbd> Focus search</div>
+                    <div><kbd>Tab</kbd>/<kbd>Shift+Tab</kbd> or <kbd>↑</kbd><kbd>↓</kbd> Move suggestions / <kbd>Enter</kbd> Select / <kbd>Escape</kbd> Close</div>
+
+                    <div class="help-section">Navigation</div>
+                    <div><kbd>Backspace</kbd> / <kbd>Alt</kbd>+<kbd>←</kbd> Go up one level</div>
+                    <div>Use mapped alphanumeric keys to navigate.</div>
+
+                    <div class="help-section">キーバインド（貼り付け・設定）</div>
+                    <div id="helpLineAltKey"></div>
+                    <div id="helpLineCtrlAltKey"></div>
+                    <div id="helpLineUnassignedKey"></div>
+
+                    <div class="help-section">Copy</div>
+                    <div><kbd>Ctrl</kbd>+<kbd>C</kbd> Copy the current saved text</div>
+                    <div>Click the text panel, press <kbd>Enter</kbd>, or press <kbd>Space</kbd> to copy.</div>
+
+                    <div class="help-section">Editing</div>
+                    <div><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>N</kbd> Edit the current label</div>
+                    <div><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>C</kbd> Edit the current saved text</div>
+                    <div><kbd>Ctrl</kbd>+<kbd>Enter</kbd> Edit the current label and text</div>
+                    <div>Double-click the text panel to edit.</div>
+
+                    <div class="help-section">Dialogs</div>
+                    <div><kbd>Ctrl</kbd>+<kbd>S</kbd> / <kbd>Ctrl</kbd>+<kbd>Enter</kbd> Save</div>
+                    <div><kbd>Escape</kbd> Close the current dialog or collapse the app</div>
+
+                    <div class="help-section">Keyboard layout dialog</div>
+                    <div><kbd>←</kbd><kbd>↑</kbd> Previous / <kbd>→</kbd><kbd>↓</kbd> Next / <kbd>Enter</kbd> Select and close</div>
+                </div>
+                <button type="button" class="help-modal-close" id="helpModalClose">Close</button>
+            </div>
+        </div>
+
+        <!-- テンキー設定モーダル（F4で表示・QWERTY/Numpadの選択） -->
+        <div class="tenkey-modal-overlay" id="tenkeyModalOverlay" aria-hidden="true">
+            <div class="tenkey-modal" id="tenkeyModal" role="dialog" aria-labelledby="tenkeyModalTitle" aria-modal="true">
+                <div class="tenkey-modal-title" id="tenkeyModalTitle">Keyboard layout</div>
+                <div class="tenkey-modal-choices" id="tenkeyModalChoices"></div>
+                <button type="button" class="tenkey-modal-close" id="tenkeyModalClose">Close</button>
+            </div>
+        </div>
+
+        <!-- 設定モーダル（F5で表示） -->
+        <div class="setting-modal-overlay" id="settingModalOverlay" aria-hidden="true">
+            <div class="setting-modal" id="settingModal" role="dialog" aria-labelledby="settingModalTitle" aria-modal="true">
+                <div class="setting-modal-title" id="settingModalTitle">Settings</div>
+                <div class="setting-modal-body">
+                    <div class="setting-row">
+                        <label for="settingLanguage">Interface language</label>
+                        <select id="settingLanguage" aria-label="Interface language">
+                            <option value="en">English</option>
+                            <option value="ja">日本語 — Japanese</option>
+                            <option value="zh-CN">简体中文 — Simplified Chinese</option>
+                            <option value="zh-TW">繁體中文 — Traditional Chinese</option>
+                            <option value="ko">한국어 — Korean</option>
+                            <option value="es">Español — Spanish</option>
+                            <option value="fr">Français — French</option>
+                            <option value="de">Deutsch — German</option>
+                            <option value="pt">Português — Portuguese</option>
+                            <option value="it">Italiano — Italian</option>
+                            <option value="ru">Русский — Russian</option>
+                            <option value="hi">हिन्दी — Hindi</option>
+                            <option value="ar">العربية — Arabic</option>
+                        </select>
+                        <div class="setting-help-text">Choose a preferred interface language. Additional translations will be added progressively.</div>
+                    </div>
+                    <div class="setting-row app-only-setting" id="autostartSetting">
+                        <label><input type="checkbox" id="settingAutostart"> Launch at system startup</label>
+                        <div class="setting-help-text">Start Mineparser automatically when you sign in to your computer.</div>
+                    </div>
+                </div>
+                <button type="button" class="setting-modal-close" id="settingModalClose">Close</button>
+            </div>
+        </div>
+
+        <!-- モードモーダル（F6で表示） -->
+        <div class="mode-modal-overlay" id="modeModalOverlay" aria-hidden="true">
+            <div class="mode-modal" id="modeModal" role="dialog" aria-labelledby="modeModalTitle" aria-modal="true">
+                <div class="mode-modal-title" id="modeModalTitle">Mode</div>
+                <div class="mode-modal-body">
+                    <label class="mode-choice"><input type="radio" name="pasteMode" value="copy"><span><strong>Copy only</strong><small>Copy saved text to the clipboard.</small></span></label>
+                    <label class="mode-choice"><input type="radio" name="pasteMode" value="copy-paste"><span><strong>Paste to previous app</strong><small>Return to the previous app and paste automatically.</small></span></label>
+                </div>
+                <button type="button" class="mode-modal-close" id="modeModalClose">Close</button>
+            </div>
+        </div>
+    </div>
+    <aside class="web-shortcuts" aria-label="Web demo shortcuts">
+        <div class="web-shortcuts-title" id="webShortcutsTitle">Web demo shortcuts</div>
+        <div class="web-shortcuts-grid">
+            <span><kbd>Ctrl</kbd> + <kbd>K</kbd> <span data-shortcut-label="search">Search</span></span>
+            <span><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>Space</kbd> <span data-shortcut-label="open">Open</span></span>
+            <span><kbd>Enter</kbd> <span data-shortcut-label="copy">Copy</span></span>
+            <span><kbd>Backspace</kbd> <span data-shortcut-label="up">Go up</span></span>
+            <span><kbd>Escape</kbd> <span data-shortcut-label="collapse">Collapse</span></span>
+            <span><kbd>F1</kbd> <span data-shortcut-label="help">Help</span></span>
+            <span><kbd>F2</kbd> <span data-shortcut-label="export">Export</span></span>
+            <span><kbd>F3</kbd> <span data-shortcut-label="import">Import</span></span>
+            <span><kbd>F4</kbd> <span data-shortcut-label="layout">Layout</span></span>
+            <span><kbd>F5</kbd> <span data-shortcut-label="settings">Settings</span></span>
+            <span><kbd>F6</kbd> <span data-shortcut-label="mode">Mode</span></span>
+        </div>
+    </aside>
+
+    <!-- キーバインド設定ダイアログ（全画面・ヘッダーにタイトルとボタン） -->
+    <div class="bind-dialog" id="bindDialog">
+        <div class="bind-dialog-header">
+            <div class="bind-dialog-title">Edit item</div>
+            <div class="bind-dialog-buttons">
+                <button class="bind-dialog-button secondary" onclick="closeBindDialog()">Cancel</button>
+                <button class="bind-dialog-button primary" onclick="saveBind()">Save</button>
+            </div>
+        </div>
+        <div class="bind-dialog-body">
+            <div class="bind-dialog-desc" style="margin-bottom:14px; font-size:14px; color:#b0b0b0; line-height:1.45;">Edit the label and reusable text for this item.</div>
+            <div class="bind-dialog-section">
+                <div class="bind-dialog-section-title" id="bindNavLabelTitle">1. Navigation label</div>
+                <div class="bind-dialog-section-desc" id="bindNavLabelHelp">A short label shown on the keyboard and used for search.</div>
+                <input type="text" class="bind-dialog-input" id="bindNavLabelInput" placeholder="Example: Rust, debug, deploy">
+            </div>
+            
+            <div class="bind-dialog-section">
+                <div class="bind-dialog-section-title" id="bindSavedTextTitle">2. Saved text</div>
+                <div class="bind-dialog-section-desc" id="bindSavedTextHelp">The prompt, command, or reusable text returned by this item.</div>
+                <textarea class="bind-dialog-textarea" id="bindContentInput" placeholder="Example: Rust: reproduce → isolate&#10;fn main() {&#10;    // debugging code&#10;}"></textarea>
+            </div>
+        </div>
+    </div>
+
+    <script src="local-store.js"></script>
+    <script src="web-app.js"></script>
+</body>
+</html>
+

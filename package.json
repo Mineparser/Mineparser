@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "tauri": "tauri",
+    "build:extension": "node scripts/build-extension.mjs",
     "test": "node --test test/*.test.mjs",
     "benchmark": "node test/benchmark.mjs"
   },
