@@ -50,6 +50,27 @@
             font-size: 12px;
         }
         .collapse-app-btn:hover { background: rgba(40,90,130,.82); }
+        .web-shortcuts {
+            display: none;
+            position: fixed;
+            right: 18px;
+            bottom: 18px;
+            z-index: 20;
+            width: min(290px, calc(100vw - 36px));
+            padding: 14px 16px;
+            border: 1px solid rgba(255,255,255,.2);
+            border-radius: 14px;
+            color: #eaf3ff;
+            background: rgba(7, 15, 28, .76);
+            box-shadow: 0 12px 34px rgba(0,0,0,.34);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        body.web-mode .web-shortcuts { display: block; }
+        .web-shortcuts-title { margin-bottom: 8px; color: #54d6ff; font-size: 13px; font-weight: 800; }
+        .web-shortcuts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px 12px; font-size: 12px; }
+        .web-shortcuts kbd { padding: 2px 5px; border: 1px solid #52749a; border-radius: 4px; background: #17283f; color: #fff; font-family: inherit; }
+        @media (max-width: 700px) { .web-shortcuts { position: static; margin: 10px 6px 0; width: auto; } }
         body.marker-collapsed .container { display: none; }
         body.marker-collapsed .launcher-marker { display: flex; }
         body:not(.marker-collapsed) .launcher-marker { display: none; }
@@ -1412,6 +1433,21 @@
             </div>
         </div>
     </div>
+    <aside class="web-shortcuts" aria-label="Web demo shortcuts">
+        <div class="web-shortcuts-title">Web demo shortcuts</div>
+        <div class="web-shortcuts-grid">
+            <span><kbd>Ctrl</kbd> + <kbd>K</kbd> Search</span>
+            <span><kbd>Enter</kbd> Copy</span>
+            <span><kbd>Backspace</kbd> Go up</span>
+            <span><kbd>Escape</kbd> Collapse</span>
+            <span><kbd>F1</kbd> Help</span>
+            <span><kbd>F2</kbd> Export</span>
+            <span><kbd>F3</kbd> Import</span>
+            <span><kbd>F4</kbd> Layout</span>
+            <span><kbd>F5</kbd> Settings</span>
+            <span><kbd>F6</kbd> Mode</span>
+        </div>
+    </aside>
 
     <!-- キーバインド設定ダイアログ（全画面・ヘッダーにタイトルとボタン） -->
     <div class="bind-dialog" id="bindDialog">
