@@ -12,5 +12,6 @@
     }
   },
   "permissions": ["storage", "activeTab", "scripting"],
+  "host_permissions": ["<all_urls>"],
   "web_accessible_resources": [{ "resources": ["app.html", "app.css", "app.js", "assets/*"], "matches": ["<all_urls>"] }]
 }
