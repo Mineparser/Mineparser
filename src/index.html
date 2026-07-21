@@ -1107,6 +1107,22 @@
             border: 1px solid #555;
             border-radius: 4px;
             font-size: 14px;
+            color-scheme: dark;
+        }
+        .setting-modal-body .setting-row select,
+        .setting-modal-body .setting-row select:focus,
+        .setting-modal-body .setting-row select option {
+            background-color: #172235 !important;
+            color: #f4f7fb !important;
+        }
+        .setting-modal-body .setting-row select {
+            border-color: #5b7da5 !important;
+            box-shadow: 0 0 0 1px rgba(84,214,255,.12);
+        }
+        .setting-modal-body .setting-row select:focus {
+            border-color: #54d6ff !important;
+            box-shadow: 0 0 0 3px rgba(84,214,255,.22);
+            outline: none;
         }
         .setting-modal-close {
             display: block;
@@ -1405,13 +1421,13 @@
             <div class="bind-dialog-section">
                 <div class="bind-dialog-section-title">1. Navigation label</div>
                 <div class="bind-dialog-section-desc">A short label shown on the keyboard and used for search.</div>
-                <input type="text" class="bind-dialog-input" id="bindNavLabelInput" placeholder="例: Rust, debug, deploy">
+                <input type="text" class="bind-dialog-input" id="bindNavLabelInput" placeholder="Example: Rust, debug, deploy">
             </div>
             
             <div class="bind-dialog-section">
                 <div class="bind-dialog-section-title">2. Saved text</div>
                 <div class="bind-dialog-section-desc">The prompt, command, or reusable text returned by this item.</div>
-                <textarea class="bind-dialog-textarea" id="bindContentInput" placeholder="例: Rust: 再現→切り分け&#10;fn main() {&#10;    // デバッグコード&#10;}"></textarea>
+                <textarea class="bind-dialog-textarea" id="bindContentInput" placeholder="Example: Rust: reproduce → isolate&#10;fn main() {&#10;    // debugging code&#10;}"></textarea>
             </div>
         </div>
     </div>
@@ -2469,9 +2485,20 @@
         const settingModalCloseEl = document.getElementById('settingModalClose');
         if (settingModalCloseEl) settingModalCloseEl.addEventListener('click', closeSettingModal);
         const settingLanguageEl = document.getElementById('settingLanguage');
+        function applyLanguageExamples() {
+            const japanese = interfaceLanguage === 'ja';
+            const searchEl = document.getElementById('searchInput');
+            const navEl = document.getElementById('bindNavLabelInput');
+            const contentEl = document.getElementById('bindContentInput');
+            if (searchEl) searchEl.placeholder = japanese ? '検索または移動...' : 'Type to search or navigate...';
+            if (navEl) navEl.placeholder = japanese ? '例: Rust、デバッグ、デプロイ' : 'Example: Rust, debug, deploy';
+            if (contentEl) contentEl.placeholder = japanese ? '例: Rust: 再現 → 切り分け\nfn main() {\n    // デバッグコード\n}' : 'Example: Rust: reproduce → isolate\nfn main() {\n    // debugging code\n}';
+        }
+        applyLanguageExamples();
         if (settingLanguageEl) settingLanguageEl.addEventListener('change', (event) => {
             interfaceLanguage = event.target.value;
             localStorage.setItem('mineparser.interfaceLanguage', interfaceLanguage);
+            applyLanguageExamples();
         });
         // モードモーダル: オーバーレイクリック・閉じるボタン
         const modeModalOverlayEl = document.getElementById('modeModalOverlay');
