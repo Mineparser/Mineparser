@@ -6,7 +6,7 @@
   "scripts": {
     "tauri": "tauri",
     "build:extension": "node scripts/build-extension.mjs",
-    "test": "node --test test",
+    "test": "node --test",
     "benchmark": "node test/benchmark.mjs"
   },
   "devDependencies": {
