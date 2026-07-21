@@ -1559,6 +1559,7 @@
 
         function applyUiLanguage() {
             const t = currentUiText();
+            const japanese = interfaceLanguage === 'ja';
             const setText = (selector, value) => document.querySelectorAll(selector).forEach((el) => { el.textContent = value; });
             setText('#settingModalTitle', t.settings);
             setText('label[for="settingLanguage"]', t.language);
@@ -1583,6 +1584,12 @@
             if (searchEl) searchEl.placeholder = t.search;
             const hintEl = document.querySelector('.search-section > .search-label[style*="margin-top"]');
             if (hintEl) hintEl.textContent = t.tryTyping;
+            const buttonLabels = japanese
+                ? ['ヘルプ (F1)', 'エクスポート (F2)', 'インポート (F3)', 'キーボード (F4)', '設定 (F5)', 'モード (F6)']
+                : ['Help (F1)', 'Export (F2)', 'Import (F3)', 'Keyboard (F4)', 'Settings (F5)', 'Mode (F6)'];
+            document.querySelectorAll('.fkey-row .fkey-btn').forEach((button, index) => {
+                if (buttonLabels[index]) button.textContent = buttonLabels[index];
+            });
             applyLanguageExamples();
             updateHelpModalText();
         }
@@ -1952,7 +1959,7 @@
                         labelEl.className = 'key-label';
                         keyEl.appendChild(labelEl);
                     }
-                    labelEl.textContent = '[Unassigned]';
+                    labelEl.textContent = interfaceLanguage === 'ja' ? '[未設定]' : '[Unassigned]';
                 }
                 
                 // 文字数インジケータの更新（先に大きさ10刻み→最大で色10刻み）
@@ -2023,7 +2030,7 @@
                     stringEl.textContent = sourceNode.content;
                     stringEl.style.color = '#e0e0e0';
                 } else {
-                    stringEl.textContent = '[Unassigned] Press Ctrl+Enter to set text';
+                    stringEl.textContent = interfaceLanguage === 'ja' ? '[未設定] Ctrl+Enterで設定' : '[Unassigned] Press Ctrl+Enter to set text';
                     stringEl.style.color = '#858585';
                 }
             }
@@ -2137,7 +2144,7 @@
 
         // クリップボードにコピー
         async function copyToClipboard(text) {
-            if (!text || text === '[Unassigned] Press Ctrl+Enter to set text') return false;
+            if (!text || text === '[Unassigned] Press Ctrl+Enter to set text' || text === '[未設定] Ctrl+Enterで設定') return false;
             try {
                 await navigator.clipboard.writeText(text);
                 return true;
@@ -2360,11 +2367,11 @@
             const unassignedLineEl = document.getElementById('helpLineUnassignedKey');
             const japanese = interfaceLanguage === 'ja';
             if (inputMode === 'tenkey') {
-                if (titleEl) titleEl.textContent = 'Commands available at this level';
+                if (titleEl) titleEl.textContent = japanese ? 'この階層で使える操作' : 'Commands available at this level';
                 if (altLineEl) altLineEl.innerHTML = japanese ? '<kbd>Alt</kbd>+<kbd>数字キー</kbd> 貼り付け先を選び、<kbd>Enter</kbd> で文字列を貼り付け' : '<kbd>Alt</kbd>+<kbd>number</kbd> Select a paste target, then press <kbd>Enter</kbd> to paste';
                 if (ctrlAltLineEl) ctrlAltLineEl.innerHTML = japanese ? '<kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>数字キー</kbd> そのキーを設定' : '<kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>number</kbd> Configure that key';
             } else {
-                if (titleEl) titleEl.textContent = 'Commands available at this level';
+                if (titleEl) titleEl.textContent = japanese ? 'この階層で使える操作' : 'Commands available at this level';
                 if (altLineEl) altLineEl.innerHTML = japanese ? '<kbd>Alt</kbd>+<kbd>英数字キー</kbd> 貼り付け先を選び、<kbd>Enter</kbd> で文字列を貼り付け' : '<kbd>Alt</kbd>+<kbd>alphanumeric</kbd> Select a paste target, then press <kbd>Enter</kbd> to paste';
                 if (ctrlAltLineEl) ctrlAltLineEl.innerHTML = japanese ? '<kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>英数字キー</kbd> そのキーを設定' : '<kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>alphanumeric</kbd> Configure that key';
             }
@@ -2613,6 +2620,7 @@
             interfaceLanguage = event.target.value;
             localStorage.setItem('mineparser.interfaceLanguage', interfaceLanguage);
             applyUiLanguage();
+            updateDisplay();
         });
         // モードモーダル: オーバーレイクリック・閉じるボタン
         const modeModalOverlayEl = document.getElementById('modeModalOverlay');
