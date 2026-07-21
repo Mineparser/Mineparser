@@ -64,16 +64,15 @@
             min-height: 100vh;
         }
         body.web-mode {
-            background: radial-gradient(circle at 10% 8%, rgba(58,116,180,.34), transparent 30%), radial-gradient(circle at 88% 12%, rgba(124,74,182,.30), transparent 28%), linear-gradient(135deg, #09111f 0%, #14233b 48%, #0d1728 100%);
+            background: #0a1220 url('assets/mineparser-mountain-bg.png') center / cover fixed no-repeat;
         }
         body.web-mode::before {
             content: '';
             position: fixed;
             inset: 0;
             pointer-events: none;
-            opacity: .18;
-            background-image: linear-gradient(rgba(255,255,255,.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.04) 1px, transparent 1px);
-            background-size: 32px 32px;
+            opacity: .22;
+            background: linear-gradient(180deg, rgba(4,9,18,.10), rgba(4,9,18,.48));
         }
 
         .container {
