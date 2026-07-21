@@ -2071,6 +2071,20 @@
             if (invoke) invoke('collapse_marker').catch((err) => console.warn('Mineparserを閉じられませんでした:', err));
         }
 
+        function hasOpenOverlay() {
+            return ['helpModalOverlay', 'tenkeyModalOverlay', 'settingModalOverlay', 'modeModalOverlay']
+                .some((id) => document.getElementById(id)?.classList.contains('show')) ||
+                document.getElementById('bindDialog')?.classList.contains('show');
+        }
+
+        // Capture Escape before input-specific handlers so the workspace can always be collapsed.
+        window.addEventListener('keydown', (event) => {
+            if (event.key !== 'Escape' || hasOpenOverlay()) return;
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            collapseMineparser();
+        }, true);
+
         async function expandMineparser(fromMarker = false) {
             setMarkerCollapsed(false);
             const invoke = window.__TAURI__?.core?.invoke;
