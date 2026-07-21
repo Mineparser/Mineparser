@@ -1562,7 +1562,7 @@
         let autocompleteTimeout = null;
         let searchSyncTimeout = null; // 検索バー→階層UI同期用デバウンス
         let lastNavigateToPathAt = 0; // 階層移動直後の input で上書きしないガード用
-        let inputMode = 'qwerty'; // レイアウトID（'qwerty' | 'tenkey' | 将来 'dvorak' 等）
+        let inputMode = localStorage.getItem('mineparser.inputMode') || 'qwerty'; // レイアウトID
         let pasteMode = localStorage.getItem('mineparser.pasteMode') || 'copy';
         let interfaceLanguage = localStorage.getItem('mineparser.interfaceLanguage') || 'en';
 
@@ -2761,6 +2761,7 @@
         // モード切替（レイアウトID指定）— 描画してからモーダル内ボタンの表示を同期
         function setInputMode(layoutId) {
             inputMode = layoutId;
+            localStorage.setItem('mineparser.inputMode', inputMode);
             const section = document.getElementById('keyboardSection');
             if (section) section.dataset.mode = layoutId;
             renderKeyboardLayout(layoutId);
