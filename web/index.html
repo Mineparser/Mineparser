@@ -38,6 +38,11 @@
     .card .icon { font-size:25px; }
     .card h3 { margin:14px 0 8px; }
     .card p { margin:0; color:var(--muted); line-height:1.6; font-size:14px; }
+    .try-card { max-width:720px; margin-top:26px; padding:20px; border:1px solid #36577d; border-radius:16px; background:#0c1729dd; box-shadow:0 18px 50px #0005; }
+    .try-card label { display:block; margin-bottom:10px; font-weight:800; color:var(--cyan); }
+    .try-card textarea { width:100%; min-height:130px; resize:vertical; padding:14px; border:1px solid #3b5d82; border-radius:10px; color:var(--text); background:#07101e; font:inherit; line-height:1.6; outline:none; }
+    .try-card textarea:focus { border-color:var(--cyan); box-shadow:0 0 0 3px #54d6ff22; }
+    .try-status { margin-top:10px; color:var(--muted); font-size:13px; }
     footer { padding:30px 0 50px; color:var(--muted); font-size:13px; }
     @media (max-width:700px) { .wrap { width:min(100% - 28px, 560px); } .hero { padding:60px 0 50px; } .preview-window { grid-template-columns:1fr; } .grid { grid-template-columns:1fr; } nav { padding:18px 0; } }
   </style>
@@ -53,8 +58,15 @@
       <div class="preview"><div class="preview-window"><div><div class="fake-line short"></div><div class="fake-line"></div><div class="fake-line"></div><div class="fake-line short"></div></div><div class="fake-card"><strong>Selected prompt</strong><div class="fake-line"></div><div class="fake-line short"></div></div></div></div>
     </section>
     <section class="section wrap" id="features"><h2>Built for repeatable work.</h2><p>Mineparser keeps the things you type again and again close at hand, without requiring a server or a complicated setup.</p><div class="grid"><article class="card"><div class="icon">⚡</div><h3>Fast recall</h3><p>Navigate by keyboard, search by text, and copy a saved item in seconds.</p></article><article class="card"><div class="icon">🧭</div><h3>Clear structure</h3><p>Keep prompts and commands organized by category, project, and workflow.</p></article><article class="card"><div class="icon">🔒</div><h3>Local-first</h3><p>Your data stays in your browser or desktop app. Export JSON whenever you need a backup.</p></article></div></section>
-    <section class="section wrap"><h2>Try the workflow.</h2><p>Open the demo, add a few items, then test search, keyboard navigation, copy, import, and export on your own device.</p><div class="actions" style="justify-content:flex-start"><a class="btn primary" href="./app/">Launch the web app →</a></div></section>
+    <section class="section wrap" id="try"><h2>Try it before you install anything.</h2><p>Type into the sample workspace, then open the full local-first app when you are ready to organize your own library.</p><div class="try-card"><label for="demoInput">Your scratchpad</label><textarea id="demoInput" placeholder="Type a prompt, command, or idea here..."></textarea><div class="try-status" id="demoStatus">Your text stays in this page.</div></div><div class="actions" style="justify-content:flex-start"><a class="btn primary" href="./app/">Launch the web app →</a></div></section>
   </main>
   <footer class="wrap">Mineparser · Desktop app and web companion · v0.1.0</footer>
+  <script>
+    const demoInput = document.getElementById('demoInput');
+    const demoStatus = document.getElementById('demoStatus');
+    demoInput.addEventListener('input', () => {
+      demoStatus.textContent = demoInput.value.length ? `${demoInput.value.length} characters · stored in this page only` : 'Your text stays in this page.';
+    });
+  </script>
 </body>
 </html>
