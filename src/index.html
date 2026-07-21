@@ -335,8 +335,10 @@
 
         /* キーボードレイアウト（左列内・残り高さを占有） */
         .keyboard-section {
-            flex: 1 1 0;
-            min-height: 0;
+            /* The keyboard is the navigation surface; never allow the flex layout
+               to collapse it when the preview panel grows on small screens. */
+            flex: 0 0 auto;
+            min-height: 318px;
             min-width: 0;
             width: 100%;
             display: flex;
@@ -443,6 +445,7 @@
             padding: 12px 4px 8px 4px;
             border-radius: 8px;
             overflow-x: auto;
+            flex: 0 0 auto;
         }
 
         .keyboard-row {
@@ -534,7 +537,7 @@
             .main-content-wrapper { display: flex; flex-direction: column; gap: 10px; }
             .left-column { width: 100%; }
             .autocomplete-panel { min-height: 260px; padding: 8px; }
-            .keyboard-section { overflow-x: auto; }
+            .keyboard-section { overflow-x: auto; min-height: 318px; }
             .keyboard { width: max-content; min-width: 100%; transform-origin: left top; }
             .fkey-row { gap: 4px; }
             .fkey-btn { min-width: auto; padding: 6px 7px; font-size: 11px; }
