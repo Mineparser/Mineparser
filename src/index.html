@@ -2008,8 +2008,8 @@
             if (!contentEl || !titleEl) return;
 
             // タイトル: 〇層目の〇 — Nav: 名前（未割り当てのときは全層で非表示）
-            const navLabelText = sourceNode.navLabel ? `Nav: ${sourceNode.navLabel}` : 'Nav: Unassigned';
-            if (navLabelText === 'Nav: Unassigned') {
+            const navLabelText = sourceNode.navLabel ? `Nav: ${sourceNode.navLabel}` : (interfaceLanguage === 'ja' ? 'Nav: 未設定' : 'Nav: Unassigned');
+            if (navLabelText === 'Nav: Unassigned' || navLabelText === 'Nav: 未設定') {
                 titleEl.textContent = '';
             } else if (currentPath === '') {
                 titleEl.textContent = getLayerLabelForPath('') + ' — ' + navLabelText;
@@ -2022,7 +2022,7 @@
 
             // Nav とその名前
             if (labelEl) {
-                labelEl.textContent = sourceNode.navLabel ? `Nav: ${sourceNode.navLabel}` : 'Nav: Unassigned';
+                labelEl.textContent = sourceNode.navLabel ? `Nav: ${sourceNode.navLabel}` : (interfaceLanguage === 'ja' ? 'Nav: 未設定' : 'Nav: Unassigned');
             }
             // 設定文字列エリア: content のみ（クリップボード用は親の data-content）
             if (stringEl) {
@@ -2380,32 +2380,32 @@
             document.querySelectorAll('.fkey-row .fkey-btn').forEach(function(btn) {
                 const f = parseInt(btn.getAttribute('data-f'), 10);
                 if (f === 1) {
-                    btn.textContent = 'Help (F1)';
+                    btn.textContent = japanese ? 'ヘルプ (F1)' : 'Help (F1)';
                     btn.className = 'fkey-btn fkey-btn-help';
-                    btn.setAttribute('title', 'Help (F1)');
+                    btn.setAttribute('title', japanese ? 'ヘルプ (F1)' : 'Help (F1)');
                     btn.setAttribute('aria-label', 'Show help (F1)');
                 } else if (f === 2) {
-                    btn.textContent = 'Export (F2)';
+                    btn.textContent = japanese ? 'エクスポート (F2)' : 'Export (F2)';
                     btn.className = 'fkey-btn fkey-btn-export';
                     btn.setAttribute('title', 'Export (F2)');
                     btn.setAttribute('aria-label', 'Export (F2)');
                 } else if (f === 3) {
-                    btn.textContent = 'Import (F3)';
+                    btn.textContent = japanese ? 'インポート (F3)' : 'Import (F3)';
                     btn.className = 'fkey-btn fkey-btn-import';
                     btn.setAttribute('title', 'Import (F3)');
                     btn.setAttribute('aria-label', 'Import (F3)');
                 } else if (f === 4) {
-                    btn.textContent = 'Keyboard (F4)';
+                    btn.textContent = japanese ? 'キーボード (F4)' : 'Keyboard (F4)';
                     btn.className = 'fkey-btn fkey-btn-tenkey';
                     btn.setAttribute('title', 'Keyboard (F4)');
                     btn.setAttribute('aria-label', 'Keyboard (F4)');
                 } else if (f === 5) {
-                    btn.textContent = 'Setting (F5)';
+                    btn.textContent = japanese ? '設定 (F5)' : 'Settings (F5)';
                     btn.className = 'fkey-btn fkey-btn-setting';
                     btn.setAttribute('title', 'Setting (F5)');
                     btn.setAttribute('aria-label', 'Setting (F5)');
                 } else if (f === 6) {
-                    btn.textContent = 'Mode (F6)';
+                    btn.textContent = japanese ? 'モード (F6)' : 'Mode (F6)';
                     btn.className = 'fkey-btn fkey-btn-mode';
                     btn.setAttribute('title', 'Mode (F6) モード選択');
                     btn.setAttribute('aria-label', 'Mode (F6) モード選択');
