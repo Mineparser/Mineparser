@@ -1463,6 +1463,7 @@
         <div class="web-shortcuts-title" id="webShortcutsTitle">Web demo shortcuts</div>
         <div class="web-shortcuts-grid">
             <span><kbd>Ctrl</kbd> + <kbd>K</kbd> <span data-shortcut-label="search">Search</span></span>
+            <span><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>Space</kbd> <span data-shortcut-label="open">Open</span></span>
             <span><kbd>Enter</kbd> <span data-shortcut-label="copy">Copy</span></span>
             <span><kbd>Backspace</kbd> <span data-shortcut-label="up">Go up</span></span>
             <span><kbd>Escape</kbd> <span data-shortcut-label="collapse">Collapse</span></span>
@@ -1599,13 +1600,13 @@
             ar: ['مساعدة', 'تصدير', 'استيراد', 'لوحة المفاتيح', 'الإعدادات', 'الوضع']
         };
         const SHORTCUT_LABELS = {
-            en: ['Web demo shortcuts', 'Search', 'Copy', 'Go up', 'Collapse'], ja: ['Webデモのショートカット', '検索', 'コピー', '上へ戻る', '折りたたむ'],
-            'zh-CN': ['Web 演示快捷键', '搜索', '复制', '返回上级', '收起'], 'zh-TW': ['Web 示範快速鍵', '搜尋', '複製', '返回上層', '收合'],
-            ko: ['웹 데모 단축키', '검색', '복사', '위로 이동', '접기'], es: ['Atajos de la demo web', 'Buscar', 'Copiar', 'Subir', 'Contraer'],
-            fr: ['Raccourcis de la démo web', 'Rechercher', 'Copier', 'Remonter', 'Réduire'], de: ['Web-Demo-Tastenkürzel', 'Suchen', 'Kopieren', 'Nach oben', 'Einklappen'],
-            pt: ['Atalhos da demonstração web', 'Pesquisar', 'Copiar', 'Subir', 'Recolher'], it: ['Scorciatoie della demo web', 'Cerca', 'Copia', 'Su', 'Comprimi'],
-            ru: ['Быстрые клавиши веб-демо', 'Поиск', 'Копировать', 'Вверх', 'Свернуть'], hi: ['वेब डेमो शॉर्टकट', 'खोजें', 'कॉपी करें', 'ऊपर जाएँ', 'समेटें'],
-            ar: ['اختصارات العرض التجريبي', 'بحث', 'نسخ', 'للأعلى', 'طي']
+            en: ['Web demo shortcuts', 'Search', 'Open', 'Copy', 'Go up', 'Collapse'], ja: ['Webデモのショートカット', '検索', '開く', 'コピー', '上へ戻る', '折りたたむ'],
+            'zh-CN': ['Web 演示快捷键', '搜索', '打开', '复制', '返回上级', '收起'], 'zh-TW': ['Web 示範快速鍵', '搜尋', '開啟', '複製', '返回上層', '收合'],
+            ko: ['웹 데모 단축키', '검색', '열기', '복사', '위로 이동', '접기'], es: ['Atajos de la demo web', 'Buscar', 'Abrir', 'Copiar', 'Subir', 'Contraer'],
+            fr: ['Raccourcis de la démo web', 'Rechercher', 'Ouvrir', 'Copier', 'Remonter', 'Réduire'], de: ['Web-Demo-Tastenkürzel', 'Suchen', 'Öffnen', 'Kopieren', 'Nach oben', 'Einklappen'],
+            pt: ['Atalhos da demonstração web', 'Pesquisar', 'Abrir', 'Copiar', 'Subir', 'Recolher'], it: ['Scorciatoie della demo web', 'Cerca', 'Apri', 'Copia', 'Su', 'Comprimi'],
+            ru: ['Быстрые клавиши веб-демо', 'Поиск', 'Открыть', 'Копировать', 'Вверх', 'Свернуть'], hi: ['वेब डेमो शॉर्टकट', 'खोजें', 'खोलें', 'कॉपी करें', 'ऊपर जाएँ', 'समेटें'],
+            ar: ['اختصارات العرض التجريبي', 'بحث', 'فتح', 'نسخ', 'للأعلى', 'طي']
         };
 
         function applyUiLanguage() {
@@ -1639,7 +1640,7 @@
             });
             const shortcuts = SHORTCUT_LABELS[interfaceLanguage] || SHORTCUT_LABELS.en;
             setText('#webShortcutsTitle', shortcuts[0]);
-            document.querySelectorAll('[data-shortcut-label]').forEach((el) => { const key = el.dataset.shortcutLabel; const index = ['search','copy','up','collapse'].indexOf(key) + 1; if (index) el.textContent = shortcuts[index]; });
+            document.querySelectorAll('[data-shortcut-label]').forEach((el) => { const key = el.dataset.shortcutLabel; const index = ['search','open','copy','up','collapse'].indexOf(key) + 1; if (index) el.textContent = shortcuts[index]; });
             applyLanguageExamples();
             updateHelpModalText();
         }
@@ -3482,6 +3483,14 @@
         document.addEventListener('keydown', async (e) => {
             const bindDialogEl = document.getElementById('bindDialog');
             const dialogOpen = bindDialogEl ? bindDialogEl.classList.contains('show') : false;
+
+            // Ctrl+Shift+Space toggles the launcher workspace. This is the
+            // keyboard equivalent of clicking the marker/open button.
+            if (e.ctrlKey && e.shiftKey && e.code === 'Space' && !e.altKey && !e.metaKey) {
+                e.preventDefault();
+                if (document.body.classList.contains('marker-collapsed')) expandMineparser();
+                return;
+            }
 
             // F1〜F6 ショートカット（ヘルプ/エクスポート/インポート/テンキー/言語/モード）
             if (e.key === 'F1') {
