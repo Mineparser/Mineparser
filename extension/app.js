@@ -10,7 +10,8 @@ document.querySelectorAll('.fkeys [data-action]').forEach(button => button.addEv
   if(action==='layout') { layout=layout==='qwerty'?'tenkey':'qwerty'; chrome.storage.local.set({layout}); render(); }
   if(action==='settings') openSettings();
 }));
-document.querySelector('#collapse').onclick=()=>window.close();
+const closeMineparser = () => { window.parent.postMessage({ type: 'mineparser-close' }, '*'); try { window.close(); } catch {} };
+document.querySelector('#collapse').onclick=closeMineparser;
 const keyId = key => key.toLowerCase();
 function render() {
   keyboard.replaceChildren();
@@ -22,7 +23,7 @@ function render() {
 }
 function select(key) { selected = key; const node = nodes[key]; previewLabel.textContent = node ? `Nav: ${node.navLabel || 'Unassigned'}` : 'Nav: Unassigned'; previewText.textContent = node?.content || '[Unassigned]'; }
 search.addEventListener('input', () => { const q = search.value.toLowerCase(); const found = Object.entries(nodes).find(([,n]) => `${n.navLabel} ${n.content}`.toLowerCase().includes(q)); if (found) select(found[0]); });
-document.addEventListener('keydown', e => { if (e.key === 'Escape') window.close(); const key = e.key.length === 1 ? keyId(e.key.toUpperCase()) : null; if (key && nodes[key]) select(key); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeMineparser(); const key = e.key.length === 1 ? keyId(e.key.toUpperCase()) : null; if (key && nodes[key]) select(key); });
 const settingsDialog = document.querySelector('#settingsDialog');
 function openSettings() { document.querySelector('#language').value=language; document.querySelector('#layout').value=layout; if (!settingsDialog.open) settingsDialog.showModal(); }
 document.querySelector('#saveSettings').onclick = () => { language=document.querySelector('#language').value; layout=document.querySelector('#layout').value; chrome.storage.local.set({language,layout}); render(); };

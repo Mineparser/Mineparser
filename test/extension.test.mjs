@@ -11,9 +11,9 @@ test('Chromium extension manifest and required entry points are valid', () => {
   const manifest = JSON.parse(read('manifest.json'));
   assert.equal(manifest.manifest_version, 3);
   assert.equal(manifest.background.service_worker, 'background.js');
-  assert.equal(manifest.action.default_popup, 'app.html');
+  assert.equal(manifest.action.default_popup, undefined);
   assert.ok(manifest.commands['open-mineparser']);
-  for (const file of ['app.html', 'app.css', 'app.js', 'background.js']) assert.ok(fs.existsSync(path.join(root, 'extension', file)));
+  for (const file of ['app.html', 'app.css', 'app.js', 'background.js', 'overlay.js']) assert.ok(fs.existsSync(path.join(root, 'extension', file)));
 });
 
 test('extension UI exposes persistence, editing, layout, and data transfer controls', () => {
@@ -21,4 +21,6 @@ test('extension UI exposes persistence, editing, layout, and data transfer contr
   const js = read('app.js');
   for (const id of ['search', 'settings', 'edit', 'export', 'import', 'keyboard']) assert.match(html, new RegExp(`id=["']${id}["']`));
   for (const token of ['chrome.storage.local', 'showModal', 'JSON.stringify', 'JSON.parse', 'layouts']) assert.match(js, new RegExp(token.replace('.', '\\.' )));
+  assert.match(read('background.js'), /chrome\.scripting\.executeScript/);
+  assert.match(read('overlay.js'), /mineparser-extension-host/);
 });
