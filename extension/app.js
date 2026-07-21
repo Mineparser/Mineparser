@@ -8,7 +8,7 @@ let layout = 'qwerty'; let language = 'en'; let selected = null;
 document.querySelectorAll('.fkeys [data-action]').forEach(button => button.addEventListener('click', () => {
   const action=button.dataset.action; if(action==='export') document.querySelector('#export').click();
   if(action==='layout') { layout=layout==='qwerty'?'tenkey':'qwerty'; chrome.storage.local.set({layout}); render(); }
-  if(action==='settings') document.querySelector('#settings').click();
+  if(action==='settings') settingsDialog.showModal();
 }));
 document.querySelector('#collapse').onclick=()=>window.close();
 const keyId = key => key.toLowerCase();
