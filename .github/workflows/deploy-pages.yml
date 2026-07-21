@@ -30,7 +30,9 @@ jobs:
       - name: Prepare static site
         run: |
           mkdir -p _site
-          cp -R src/. _site/
+          cp -R web/. _site/
+          mkdir -p _site/app
+          cp -R src/. _site/app/
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

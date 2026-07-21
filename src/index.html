@@ -35,6 +35,21 @@
             -webkit-backdrop-filter: blur(6px);
         }
         .launcher-marker:hover { background: rgba(40,90,130,.62); }
+        .app-toolbar {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 8px;
+        }
+        .collapse-app-btn {
+            padding: 6px 12px;
+            border: 1px solid rgba(255,255,255,.16);
+            border-radius: 7px;
+            background: rgba(30,35,45,.72);
+            color: #d9e2ef;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .collapse-app-btn:hover { background: rgba(40,90,130,.82); }
         body.marker-collapsed .container { display: none; }
         body.marker-collapsed .launcher-marker { display: flex; }
         body:not(.marker-collapsed) .launcher-marker { display: none; }
@@ -470,6 +485,20 @@
 
         .key.unbound .key-label {
             color: #858585;
+        }
+
+        @media (max-width: 900px) {
+            body { padding: 6px; }
+            .container { padding: 10px; border-radius: 12px; }
+            .main-content-wrapper { display: flex; flex-direction: column; gap: 10px; }
+            .left-column { width: 100%; }
+            .autocomplete-panel { min-height: 260px; padding: 8px; }
+            .keyboard-section { overflow-x: auto; }
+            .keyboard { width: max-content; min-width: 100%; transform-origin: left top; }
+            .fkey-row { gap: 4px; }
+            .fkey-btn { min-width: auto; padding: 6px 7px; font-size: 11px; }
+            .search-input { min-height: 42px; font-size: 16px; }
+            .key { width: clamp(38px, 8vw, 61px); height: clamp(38px, 8vw, 61px); }
         }
 
         /* 未割り当てキー押下時の一瞬の赤フィードバック */
@@ -1196,6 +1225,9 @@
 <body>
     <button class="launcher-marker" id="launcherMarker" aria-label="Mineparserを開く" title="Mineparserを開く">◆</button>
     <div class="container">
+        <div class="app-toolbar">
+            <button type="button" class="collapse-app-btn" id="collapseAppButton">Collapse</button>
+        </div>
         <!-- ラッパー: 幅を検索行に合わせ、右パネルをMode(F6)右端に揃える -->
         <div class="main-content-wrapper">
             <div class="left-column">
@@ -1998,6 +2030,12 @@
             document.body.classList.toggle('marker-collapsed', collapsed);
         }
 
+        function collapseMineparser() {
+            setMarkerCollapsed(true);
+            const invoke = window.__TAURI__?.core?.invoke;
+            if (invoke) invoke('collapse_marker').catch((err) => console.warn('Mineparserを閉じられませんでした:', err));
+        }
+
         async function expandMineparser(fromMarker = false) {
             setMarkerCollapsed(false);
             const invoke = window.__TAURI__?.core?.invoke;
@@ -2011,7 +2049,9 @@
 
         const launcherMarkerEl = document.getElementById('launcherMarker');
         if (launcherMarkerEl) launcherMarkerEl.addEventListener('click', () => expandMineparser(true));
-        setMarkerCollapsed(true);
+        const collapseAppButtonEl = document.getElementById('collapseAppButton');
+        if (collapseAppButtonEl) collapseAppButtonEl.addEventListener('click', collapseMineparser);
+        setMarkerCollapsed(Boolean(window.__TAURI__));
 
         const tauriListen = window.__TAURI__?.event?.listen;
         if (tauriListen) tauriListen('mineparser:expanded', () => setMarkerCollapsed(false));
