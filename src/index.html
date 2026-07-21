@@ -67,10 +67,15 @@
             -webkit-backdrop-filter: blur(12px);
         }
         body.web-mode .web-shortcuts { display: block; }
+        body.marker-collapsed .web-shortcuts { display: none; }
         .web-shortcuts-title { margin-bottom: 8px; color: #54d6ff; font-size: 13px; font-weight: 800; }
         .web-shortcuts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px 12px; font-size: 12px; }
         .web-shortcuts kbd { padding: 2px 5px; border: 1px solid #52749a; border-radius: 4px; background: #17283f; color: #fff; font-family: inherit; }
-        @media (max-width: 700px) { .web-shortcuts { position: static; margin: 10px 6px 0; width: auto; } }
+        @media (max-width: 700px) {
+            .web-shortcuts { position: static; margin: 10px 6px 0; width: auto; }
+            body.web-mode:not(.marker-collapsed) .web-shortcuts { display: block; }
+            .launcher-marker { position: fixed; right: 12px; bottom: 12px; left: auto; top: auto; z-index: 30; }
+        }
         body.marker-collapsed .container { display: none; }
         body.marker-collapsed .launcher-marker { display: flex; }
         body:not(.marker-collapsed) .launcher-marker { display: none; }
