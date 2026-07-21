@@ -547,11 +547,15 @@
             .key { width: clamp(38px, 8vw, 61px); height: clamp(38px, 8vw, 61px); }
         }
 
-        /* Narrow phones: keep the search/preview navigation usable instead of
-           squeezing the keyboard into an unreadable, overlapping layout. */
+        /* Narrow phones still use the keyboard as the primary navigation surface. */
         @media (max-width: 420px) {
-            .keyboard-section { display: none; }
-            .autocomplete-panel { min-height: 300px; }
+            .keyboard-section { display: flex; min-height: 238px; }
+            .keyboard { gap: 5px; padding: 8px 2px 6px; }
+            .keyboard-row { gap: 1px; }
+            .keyboard-row.row2 { padding-left: 8px; }
+            .keyboard-row.row3 { padding-left: 14px; }
+            .keyboard-row.row0 { margin-bottom: 2px; }
+            .autocomplete-panel { min-height: 220px; }
         }
 
         /* 未割り当てキー押下時の一瞬の赤フィードバック */
