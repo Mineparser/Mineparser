@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "Mineparser",
+  "version": "0.1.0",
+  "description": "Keyboard-first prompt and command launcher.",
+  "action": { "default_title": "Open Mineparser", "default_popup": "app.html" },
+  "background": { "service_worker": "background.js", "type": "module" },
+  "commands": {
+    "open-mineparser": {
+      "suggested_key": { "default": "Ctrl+Shift+Space", "mac": "MacCtrl+Shift+Space" },
+      "description": "Open Mineparser"
+    }
+  },
+  "permissions": ["storage"]
+}
