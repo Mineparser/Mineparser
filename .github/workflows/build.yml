@@ -4,6 +4,7 @@ on:
   push:
     branches: [main, master]
   pull_request:
+  workflow_dispatch:
 
 jobs:
   build:
@@ -40,6 +41,15 @@ jobs:
       - name: Run tests
         run: npm test
 
+      - name: Build and validate browser extension
+        run: |
+          npm run build:extension
+          node --check extension/web-app.js
+          node --check extension/content.js
+          node --check extension/background.js
+          node -e "const fs=require('fs'); const m=JSON.parse(fs.readFileSync('extension/manifest.json')); if(m.manifest_version!==3) process.exit(1)"
+          npm test
+
       - name: Build Tauri bundles
         run: npm run tauri build
 
@@ -48,3 +58,9 @@ jobs:
         with:
           name: mineparser-${{ runner.os }}
           path: src-tauri/target/release/bundle/
+
+      - name: Upload browser extension
+        uses: actions/upload-artifact@v4
+        with:
+          name: mineparser-extension-${{ runner.os }}
+          path: extension/
