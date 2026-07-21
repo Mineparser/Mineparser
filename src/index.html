@@ -126,7 +126,7 @@
         /* メインコンテンツラッパー: 左=検索+キーボード、右=パネルを画面上部まで伸ばす */
         .main-content-wrapper {
             display: grid;
-            grid-template-columns: auto 1fr;
+            grid-template-columns: minmax(0, minmax(300px, 52%)) minmax(0, 1fr);
             grid-template-rows: 1fr;
             flex: 1 1 0;
             min-height: 0;
@@ -430,14 +430,14 @@
             margin-bottom: 6px;
         }
 
-        /* キーボード幅を keyFeedback(637px) に合わせる。内側 629px、10キー+9gap → 1キー 61.1px */
+        /* Keyboard width follows the available preview area. */
         .keyboard {
             display: flex;
             flex-direction: column;
             gap: 10px;
             align-items: center;
             align-self: flex-start;
-            width: 637px;
+            width: var(--keyboard-width, 637px);
             box-sizing: border-box;
             background: #2d2d30;
             padding: 12px 4px 8px 4px;
@@ -466,8 +466,8 @@
 
         .key {
             position: relative;
-            width: 61.1px;
-            height: 61.1px;
+            width: var(--key-size, 61.1px);
+            height: var(--key-size, 61.1px);
             flex-shrink: 0;
             background: #3c3c3c;
             border: 1px solid #555;
@@ -1363,9 +1363,9 @@
                     <div>Use mapped alphanumeric keys to navigate.</div>
 
                     <div class="help-section">キーバインド（貼り付け・設定）</div>
-                    <div id="helpLineAltKey"><kbd>Alt</kbd>+<kbd>英数字キー</kbd> 貼り付け先キーを選択（キーボード上でハイライト）→ 検索で項目を選び <kbd>Enter</kbd> でそのキーに文字列を貼り付け</div>
-                    <div id="helpLineCtrlAltKey"><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>英数字キー</kbd> そのキーの設定ダイアログを開く</div>
-                    <div>未設定キーは「<kbd>Ctrl</kbd>+<kbd>Enter</kbd>」で設定ダイアログを開く（キーボード上のキーをクリックでも可）</div>
+                    <div id="helpLineAltKey"></div>
+                    <div id="helpLineCtrlAltKey"></div>
+                    <div id="helpLineUnassignedKey"></div>
 
                     <div class="help-section">Copy</div>
                     <div><kbd>Ctrl</kbd>+<kbd>C</kbd> Copy the current saved text</div>
@@ -2357,15 +2357,18 @@
             const titleEl = document.getElementById('helpModalTitle');
             const altLineEl = document.getElementById('helpLineAltKey');
             const ctrlAltLineEl = document.getElementById('helpLineCtrlAltKey');
+            const unassignedLineEl = document.getElementById('helpLineUnassignedKey');
+            const japanese = interfaceLanguage === 'ja';
             if (inputMode === 'tenkey') {
                 if (titleEl) titleEl.textContent = 'Commands available at this level';
-                if (altLineEl) altLineEl.innerHTML = '<kbd>Alt</kbd>+<kbd>数字キー</kbd> 貼り付け先キーを選択（キーボード上でハイライト）→ 検索で項目を選び <kbd>Enter</kbd> でそのキーのバーに文字列を貼り付け';
-                if (ctrlAltLineEl) ctrlAltLineEl.innerHTML = '<kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>数字キー</kbd> そのキーの設定ダイアログを開く';
+                if (altLineEl) altLineEl.innerHTML = japanese ? '<kbd>Alt</kbd>+<kbd>数字キー</kbd> 貼り付け先を選び、<kbd>Enter</kbd> で文字列を貼り付け' : '<kbd>Alt</kbd>+<kbd>number</kbd> Select a paste target, then press <kbd>Enter</kbd> to paste';
+                if (ctrlAltLineEl) ctrlAltLineEl.innerHTML = japanese ? '<kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>数字キー</kbd> そのキーを設定' : '<kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>number</kbd> Configure that key';
             } else {
                 if (titleEl) titleEl.textContent = 'Commands available at this level';
-                if (altLineEl) altLineEl.innerHTML = '<kbd>Alt</kbd>+<kbd>英数字キー</kbd> 貼り付け先キーを選択（キーボード上でハイライト）→ 検索で項目を選び <kbd>Enter</kbd> でそのキーのバーに文字列を貼り付け';
-                if (ctrlAltLineEl) ctrlAltLineEl.innerHTML = '<kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>英数字キー</kbd> そのキーの設定ダイアログを開く';
+                if (altLineEl) altLineEl.innerHTML = japanese ? '<kbd>Alt</kbd>+<kbd>英数字キー</kbd> 貼り付け先を選び、<kbd>Enter</kbd> で文字列を貼り付け' : '<kbd>Alt</kbd>+<kbd>alphanumeric</kbd> Select a paste target, then press <kbd>Enter</kbd> to paste';
+                if (ctrlAltLineEl) ctrlAltLineEl.innerHTML = japanese ? '<kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>英数字キー</kbd> そのキーを設定' : '<kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>alphanumeric</kbd> Configure that key';
             }
+            if (unassignedLineEl) unassignedLineEl.innerHTML = japanese ? '未設定キーは <kbd>Ctrl</kbd>+<kbd>Enter</kbd> またはキーボード上のキークリックで設定' : 'Configure an unassigned key with <kbd>Ctrl</kbd>+<kbd>Enter</kbd> or by clicking it.';
             // Fキー行: F1=ヘルプ, F2=エクスポート, F3=インポート, F4=テンキー, F5=設定, F6=モード
             document.querySelectorAll('.fkey-row .fkey-btn').forEach(function(btn) {
                 const f = parseInt(btn.getAttribute('data-f'), 10);
@@ -2402,6 +2405,21 @@
                 }
             });
         }
+
+        function resizeKeyboardToPreview() {
+            const section = document.getElementById('keyboardSection');
+            const keyboard = document.getElementById('keyboardContainer');
+            if (!section || !keyboard) return;
+            const available = Math.max(280, section.clientWidth - 8);
+            const keySize = Math.max(34, Math.min(72, (available - 28) / 10));
+            keyboard.style.setProperty('--key-size', `${keySize}px`);
+            keyboard.style.setProperty('--keyboard-width', `${Math.min(637, keySize * 10 + 28)}px`);
+        }
+
+        const keyboardResizeObserver = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(resizeKeyboardToPreview) : null;
+        if (keyboardResizeObserver) keyboardResizeObserver.observe(document.getElementById('keyboardSection'));
+        window.addEventListener('resize', resizeKeyboardToPreview);
+        setTimeout(resizeKeyboardToPreview, 0);
 
         // エクスポート: /api/export を取得してJSONファイルとしてダウンロード
         async function doExport() {
