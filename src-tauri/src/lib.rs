@@ -1,6 +1,6 @@
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 use std::sync::Mutex;
-use tauri::{Manager, WebviewWindow};
+use tauri::{Emitter, LogicalPosition, LogicalSize, Manager, Position, Size, WebviewWindow};
 
 #[derive(Default)]
 struct TargetWindow(Mutex<Option<isize>>);
@@ -24,15 +24,29 @@ fn prepare_show(window: WebviewWindow, state: tauri::State<'_, TargetWindow>) ->
 }
 
 #[tauri::command]
-fn paste_to_previous_window(window: WebviewWindow, state: tauri::State<'_, TargetWindow>) -> Result<(), String> {
+fn prepare_show_from_marker(window: WebviewWindow) -> Result<(), String> {
+    window.set_fullscreen(true).map_err(|e| e.to_string())?;
+    window.show().map_err(|e| e.to_string())?;
+    window.set_focus().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn collapse_marker(window: WebviewWindow) -> Result<(), String> {
     window.set_fullscreen(false).map_err(|e| e.to_string())?;
-    window.hide().map_err(|e| e.to_string())?;
+    window.set_size(Size::Logical(LogicalSize::new(64.0, 32.0))).map_err(|e| e.to_string())?;
+    window.set_position(Position::Logical(LogicalPosition::new(16.0, 16.0))).map_err(|e| e.to_string())?;
+    window.show().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn paste_to_previous_window(window: WebviewWindow, state: tauri::State<'_, TargetWindow>) -> Result<(), String> {
+    collapse_marker(window.clone())?;
     #[cfg(windows)]
     {
         use windows::Win32::Foundation::HWND;
         use windows::Win32::UI::Input::KeyboardAndMouse::{SendInput, INPUT, INPUT_0, INPUT_KEYBOARD, KEYBDINPUT, KEYEVENTF_KEYUP, VIRTUAL_KEY, VK_CONTROL, VK_V};
         use windows::Win32::UI::WindowsAndMessaging::SetForegroundWindow;
-        let hwnd_value = state.0.lock().map_err(|_| "target window lock failed")?.take();
+        let hwnd_value = state.0.lock().map_err(|_| "target window lock failed")?.clone();
         if let Some(value) = hwnd_value {
             let focused = unsafe { SetForegroundWindow(HWND(value as *mut _)).as_bool() };
             if !focused { return Err("呼び出し元ウィンドウへフォーカスを戻せませんでした".into()); }
@@ -64,13 +78,14 @@ pub fn run() {
                     if matches!(event.state, ShortcutState::Pressed) {
                         if let Some(window) = handle.get_webview_window("main") {
                             let _ = prepare_show(window, handle.state::<TargetWindow>());
+                            let _ = handle.emit("mineparser:expanded", ());
                         }
                     }
                 })?;
             }
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![prepare_show, paste_to_previous_window])
+        .invoke_handler(tauri::generate_handler![prepare_show, prepare_show_from_marker, collapse_marker, paste_to_previous_window])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

@@ -11,11 +11,14 @@
     "windows": [
       {
         "title": "Mineparser 階層管理システム",
-        "width": 800,
-        "height": 600,
+        "width": 64,
+        "height": 32,
         "transparent": true,
         "shadow": true,
-        "fullscreen": true
+        "fullscreen": false,
+        "decorations": false,
+        "resizable": false,
+        "alwaysOnTop": true
       }
     ],
     "security": {

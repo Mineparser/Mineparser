@@ -16,6 +16,29 @@
             background: transparent;
         }
 
+        .launcher-marker {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 64px;
+            height: 32px;
+            border: 1px solid rgba(255,255,255,.28);
+            border-radius: 12px;
+            background: rgba(18,22,30,.42);
+            color: rgba(255,255,255,.9);
+            font-size: 17px;
+            cursor: pointer;
+            box-shadow: 0 5px 18px rgba(0,0,0,.2);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+        }
+        .launcher-marker:hover { background: rgba(40,90,130,.62); }
+        body.marker-collapsed .container { display: none; }
+        body.marker-collapsed .launcher-marker { display: flex; }
+        body:not(.marker-collapsed) .launcher-marker { display: none; }
+
         body {
             font-family: 'Segoe UI', 'Meiryo', sans-serif;
             background: transparent;
@@ -1109,9 +1132,69 @@
         .mode-modal-close:hover {
             background: #1177bb;
         }
+        /* 背景を確認できるガラス調の表示面 */
+        .container,
+        .search-input,
+        .keyboard-section,
+        .keyboard,
+        .autocomplete-panel,
+        .panel-content-nav,
+        .panel-nav-label,
+        .panel-content-string,
+        .autocomplete-dropdown,
+        .autocomplete-item {
+            background: rgba(22, 27, 36, 0.20) !important;
+            backdrop-filter: blur(3px);
+            -webkit-backdrop-filter: blur(3px);
+        }
+
+        .search-input,
+        .bind-dialog-input,
+        .setting-modal-body .setting-row select {
+            background: rgba(10, 14, 20, 0.18) !important;
+            border-color: rgba(255, 255, 255, 0.18);
+        }
+
+        .search-input:focus,
+        .bind-dialog-input:focus,
+        .setting-modal-body .setting-row select:focus {
+            background: rgba(10, 14, 20, 0.24) !important;
+        }
+
+        .keyboard-title,
+        .autocomplete-panel-title,
+        .panel-view-caption {
+            background: rgba(18, 22, 30, 0.16) !important;
+        }
+
+        .keyboard button,
+        .keyboard .key,
+        .autocomplete-item {
+            background: rgba(60, 64, 74, 0.24) !important;
+        }
+
+        .keyboard button:hover,
+        .keyboard .key:hover,
+        .autocomplete-item:hover,
+        .panel-content-nav:hover {
+            background: rgba(70, 130, 175, 0.34) !important;
+        }
+
+        .panel-content-nav.copy-feedback {
+            background: rgba(14, 99, 156, 0.48) !important;
+        }
+
+        .panel-content-nav.copy-feedback-error {
+            background: rgba(90, 30, 30, 0.48) !important;
+        }
+
+        .search-mode-badge {
+            opacity: 0.72;
+        }
     </style>
 </head>
 <body>
+    <button class="launcher-marker" id="launcherMarker" aria-label="Mineparserを開く" title="Mineparserを開く">◆</button>
     <div class="container">
         <!-- ラッパー: 幅を検索行に合わせ、右パネルをMode(F6)右端に揃える -->
         <div class="main-content-wrapper">
@@ -1906,9 +1989,32 @@
             if (invoke && pasteMode === 'copy-paste') {
                 try { await invoke('paste_to_previous_window'); }
                 catch (err) { console.warn('貼り付けに失敗しました:', err); }
+                setMarkerCollapsed(true);
             }
             return true;
         }
+
+        function setMarkerCollapsed(collapsed) {
+            document.body.classList.toggle('marker-collapsed', collapsed);
+        }
+
+        async function expandMineparser(fromMarker = false) {
+            setMarkerCollapsed(false);
+            const invoke = window.__TAURI__?.core?.invoke;
+            if (!invoke) return;
+            try {
+                await invoke(fromMarker ? 'prepare_show_from_marker' : 'prepare_show');
+            } catch (err) {
+                console.warn('Mineparserの表示に失敗しました:', err);
+            }
+        }
+
+        const launcherMarkerEl = document.getElementById('launcherMarker');
+        if (launcherMarkerEl) launcherMarkerEl.addEventListener('click', () => expandMineparser(true));
+        setMarkerCollapsed(true);
+
+        const tauriListen = window.__TAURI__?.event?.listen;
+        if (tauriListen) tauriListen('mineparser:expanded', () => setMarkerCollapsed(false));
 
         // コピー成功時の視覚的フィードバック（パネル内 Nav の場合は設定文字列エリアのみメッセージ表示）
         function showCopyFeedback(element, success) {
