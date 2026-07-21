@@ -2489,11 +2489,11 @@
             const keyboard = document.getElementById('keyboardContainer');
             if (!section || !keyboard) return;
             const keyboardMaxWidth = 637;
-            const available = Math.max(180, Math.min(keyboardMaxWidth, section.clientWidth) - 8);
+            const available = Math.max(180, Math.min(keyboardMaxWidth, section.clientWidth) - 2);
             // Ten keys plus nine gaps must fit inside the keyboard surface.
             const keySize = Math.max(18, Math.min(61, (available - 18) / 10));
             keyboard.style.setProperty('--key-size', `${keySize}px`);
-            keyboard.style.setProperty('--keyboard-width', `${Math.min(637, keySize * 10 + 28)}px`);
+            keyboard.style.setProperty('--keyboard-width', `${Math.min(637, keySize * 10 + 18)}px`);
         }
 
         const keyboardResizeObserver = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(resizeKeyboardToPreview) : null;
