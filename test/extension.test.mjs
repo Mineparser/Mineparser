@@ -13,7 +13,7 @@ test('Chromium extension manifest and required entry points are valid', () => {
   assert.equal(manifest.background.service_worker, 'background.js');
   assert.equal(manifest.action.default_popup, undefined);
   assert.ok(manifest.commands['open-mineparser']);
-  for (const file of ['app.html', 'app.css', 'app.js', 'background.js', 'overlay.js']) assert.ok(fs.existsSync(path.join(root, 'extension', file)));
+  for (const file of ['app.html', 'app.css', 'app.js', 'background.js', 'overlay.js', 'content.js']) assert.ok(fs.existsSync(path.join(root, 'extension', file)));
 });
 
 test('extension UI exposes persistence, editing, layout, and data transfer controls', () => {
@@ -24,5 +24,6 @@ test('extension UI exposes persistence, editing, layout, and data transfer contr
   assert.match(read('background.js'), /chrome\.scripting\.executeScript/);
   assert.match(read('background.js'), /chrome\|edge\|about\|devtools/);
   assert.match(read('overlay.js'), /mineparser-extension-host/);
+  assert.match(read('content.js'), /event\.code === 'Space'/);
   assert.match(js, /matches\('input, textarea, select/);
 });

@@ -9,5 +9,11 @@ async function toggleInPage() {
   }
 }
 
+chrome.runtime.onMessage.addListener((message, sender) => {
+  if (message?.type === 'toggle-shortcut' && sender.tab?.id) {
+    chrome.tabs.sendMessage(sender.tab.id, { type: 'toggle-overlay' }).catch(() => {});
+  }
+});
+
 chrome.commands.onCommand.addListener(command => { if (command === 'open-mineparser') toggleInPage(); });
 chrome.action.onClicked.addListener(toggleInPage);
