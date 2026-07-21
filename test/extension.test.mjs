@@ -22,6 +22,7 @@ test('extension UI exposes persistence, editing, layout, and data transfer contr
   for (const id of ['search', 'settings', 'edit', 'export', 'import', 'keyboard']) assert.match(html, new RegExp(`id=["']${id}["']`));
   for (const token of ['chrome.storage.local', 'showModal', 'JSON.stringify', 'JSON.parse', 'layouts']) assert.match(js, new RegExp(token.replace('.', '\\.' )));
   assert.match(read('background.js'), /chrome\.scripting\.executeScript/);
+  assert.match(read('background.js'), /chrome\|edge\|about\|devtools/);
   assert.match(read('overlay.js'), /mineparser-extension-host/);
   assert.match(js, /matches\('input, textarea, select/);
 });
