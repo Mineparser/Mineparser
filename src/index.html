@@ -135,6 +135,10 @@
             max-width: 100%;
         }
 
+        @media (min-width: 901px) and (orientation: landscape) {
+            .main-content-wrapper { grid-template-columns: minmax(0, 58%) minmax(0, 42%); }
+        }
+
         /* 左列: 検索＋エラー＋キーボードを縦に積み、コンパクトに */
         .left-column {
             grid-column: 1;
@@ -2493,12 +2497,12 @@
             const section = document.getElementById('keyboardSection');
             const keyboard = document.getElementById('keyboardContainer');
             if (!section || !keyboard) return;
-            const keyboardMaxWidth = 637;
+            const keyboardMaxWidth = 900;
             const available = Math.max(180, Math.min(keyboardMaxWidth, section.clientWidth) - 2);
             // Ten keys plus nine gaps must fit inside the keyboard surface.
-            const keySize = Math.max(18, Math.min(61, (available - 18) / 10));
+            const keySize = Math.max(18, Math.min(86, (available - 18) / 10));
             keyboard.style.setProperty('--key-size', `${keySize}px`);
-            keyboard.style.setProperty('--keyboard-width', `${Math.min(637, keySize * 10 + 18)}px`);
+            keyboard.style.setProperty('--keyboard-width', `${Math.min(keyboardMaxWidth, keySize * 10 + 18)}px`);
         }
 
         const keyboardResizeObserver = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(resizeKeyboardToPreview) : null;
