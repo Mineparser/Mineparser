@@ -9,4 +9,4 @@ This is a Manifest V3 extension and works in both Chromium-based Chrome and Micr
 3. Choose **Load unpacked** and select this `extension` directory.
 4. Use the toolbar button or `Ctrl+Shift+Space` to open Mineparser.
 
-The extension currently provides the keyboard-first launcher shell. Its storage is isolated in `chrome.storage.local`; the desktop/Web data store is intentionally not read automatically.
+The extension displays the published Mineparser Web app in an in-page overlay, so its UI and behavior stay aligned with the Web version. It requires network access to `mineparser.github.io`; the Web app keeps its own local storage and the desktop/extension stores remain separate.

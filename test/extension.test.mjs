@@ -24,6 +24,7 @@ test('extension UI exposes persistence, editing, layout, and data transfer contr
   assert.match(read('background.js'), /chrome\.scripting\.executeScript/);
   assert.match(read('background.js'), /chrome\|edge\|about\|devtools/);
   assert.match(read('overlay.js'), /mineparser-extension-host/);
+  assert.match(read('overlay.js'), /mineparser\.github\.io\/Mineparser\/app/);
   assert.match(read('content.js'), /event\.code === 'Space'/);
   assert.match(js, /matches\('input, textarea, select/);
 });

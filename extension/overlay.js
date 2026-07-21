@@ -5,7 +5,7 @@
   host.style.cssText = 'position:fixed;z-index:2147483647;inset:16px auto auto 16px;width:min(94vw,900px);height:min(90vh,760px);border:0;box-shadow:0 18px 60px #0009;';
   const shadow = host.attachShadow({ mode: 'closed' });
   const frame = document.createElement('iframe');
-  frame.src = chrome.runtime.getURL('app.html');
+  frame.src = 'https://mineparser.github.io/Mineparser/app/';
   frame.title = 'Mineparser';
   frame.style.cssText = 'display:block;width:100%;height:100%;border:0;border-radius:14px;background:#071326;';
   shadow.append(frame); document.documentElement.append(host);
