@@ -520,10 +520,12 @@
             font-size: 11px;
             z-index: 5;
             color: #4ec9b0;
-            white-space: nowrap;
-            max-width: calc(100% - 4px);
-            overflow: hidden;
-            text-overflow: ellipsis;
+            white-space: normal;
+            max-width: 120px;
+            overflow: visible;
+            text-overflow: clip;
+            overflow-wrap: anywhere;
+            text-align: center;
             background: #1e1e1e;
             padding: 1px 4px;
             border-radius: 3px;
@@ -558,7 +560,7 @@
             .keyboard-row.row2 { padding-left: 8px; }
             .keyboard-row.row3 { padding-left: 14px; }
             .keyboard-row.row0 { margin-bottom: 2px; }
-            .key-label { top: 2px; max-width: calc(100% - 2px); font-size: 8px; }
+            .key-label { top: 2px; max-width: 58px; font-size: 8px; line-height: 1.05; }
             .key.unbound .key-label { display: none; }
             .autocomplete-panel { min-height: 220px; }
         }
