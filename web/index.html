@@ -40,12 +40,18 @@
     .card h3 { margin:14px 0 8px; }
     .card p { margin:0; color:var(--muted); line-height:1.6; font-size:14px; }
     .try-card { max-width:720px; margin-top:26px; padding:20px; border:1px solid #36577d; border-radius:16px; background:#0c1729dd; box-shadow:0 18px 50px #0005; }
-    .try-card label { display:block; margin-bottom:10px; font-weight:800; color:var(--cyan); }
-    .try-card textarea { width:100%; min-height:130px; resize:vertical; padding:14px; border:1px solid #3b5d82; border-radius:10px; color:var(--text); background:#07101e; font:inherit; line-height:1.6; outline:none; }
-    .try-card textarea:focus { border-color:var(--cyan); box-shadow:0 0 0 3px #54d6ff22; }
-    .try-status { margin-top:10px; color:var(--muted); font-size:13px; }
+    .demo-steps { display:grid; gap:14px; margin:0; padding:0; list-style:none; counter-reset:demo-step; }
+    .demo-steps li { display:grid; grid-template-columns:32px 1fr; gap:12px; align-items:start; color:var(--muted); line-height:1.6; }
+    .demo-steps li::before { counter-increment:demo-step; content:counter(demo-step); display:grid; place-items:center; width:28px; height:28px; border:1px solid var(--cyan); border-radius:50%; color:var(--cyan); font-weight:800; }
+    .demo-steps strong { display:block; color:var(--text); margin-bottom:2px; }
+    .demo-steps kbd { padding:2px 6px; border:1px solid #52749a; border-radius:4px; background:#17283f; color:#fff; font-family:inherit; font-size:12px; }
+    .install-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-top:26px; }
+    .install-card { display:flex; flex-direction:column; gap:8px; padding:18px; border:1px solid #263b5b; border-radius:12px; background:#101a2dce; }
+    .install-card strong { color:var(--text); }
+    .install-card span { flex:1; color:var(--muted); font-size:13px; line-height:1.5; }
+    .install-card .btn { align-self:flex-start; padding:9px 12px; font-size:13px; }
     footer { padding:30px 0 50px; color:var(--muted); font-size:13px; }
-    @media (max-width:700px) { .wrap { width:min(100% - 28px, 560px); } .hero { padding:60px 0 50px; } .preview-window { grid-template-columns:1fr; } .grid { grid-template-columns:1fr; } nav { padding:18px 0; } }
+    @media (max-width:700px) { .wrap { width:min(100% - 28px, 560px); } .hero { padding:60px 0 50px; } .preview-window { grid-template-columns:1fr; } .grid, .install-grid { grid-template-columns:1fr; } nav { padding:18px 0; } }
   </style>
 </head>
 <body>
@@ -59,15 +65,9 @@
       <div class="preview"><div class="preview-window"><div><div class="fake-line short"></div><div class="fake-line"></div><div class="fake-line"></div><div class="fake-line short"></div></div><div class="fake-card"><strong>Selected prompt</strong><div class="fake-line"></div><div class="fake-line short"></div></div></div></div>
     </section>
     <section class="section wrap" id="features"><h2>Built for repeatable work.</h2><p>Mineparser keeps the things you type again and again close at hand, without requiring a server or a complicated setup.</p><div class="grid"><article class="card"><div class="icon">⚡</div><h3>Fast recall</h3><p>Navigate by keyboard, search by text, and copy a saved item in seconds.</p></article><article class="card"><div class="icon">🧭</div><h3>Clear structure</h3><p>Keep prompts and commands organized by category, project, and workflow.</p></article><article class="card"><div class="icon">🔒</div><h3>Local-first</h3><p>Your data stays in your browser or desktop app. Export JSON whenever you need a backup.</p></article></div></section>
-    <section class="section wrap" id="try"><h2>Try it before you install anything.</h2><p>Type into the sample workspace, then open the full local-first app when you are ready to organize your own library.</p><div class="try-card"><label for="demoInput">Your scratchpad</label><textarea id="demoInput" placeholder="Type a prompt, command, or idea here..."></textarea><div class="try-status" id="demoStatus">Your text stays in this page.</div></div><div class="actions" style="justify-content:flex-start"><a class="btn primary" href="./app/">Launch the web app →</a></div></section>
+    <section class="section wrap" id="try"><h2>Try the web demo before you install anything.</h2><p>Open the demo and follow these first steps to see how Mineparser works.</p><div class="try-card"><ol class="demo-steps"><li><div><strong>Open the web demo</strong>Launch Mineparser in your browser and look around the workspace.</div></li><li><div><strong>Set up one item</strong>Use the settings or edit action to give a key a label and saved text.</div></li><li><div><strong>Use it again</strong>Select the item, then copy the saved text and paste it wherever you need it.</div></li></ol></div><div class="actions" style="justify-content:flex-start"><a class="btn primary" href="./app/">Launch the web demo →</a></div></section>
   </main>
+  <section class="section wrap" id="install"><h2>Install Mineparser</h2><p>Choose the version that fits your workflow. Desktop builds are available from GitHub Releases, and the browser extension works with Chrome and Edge.</p><div class="install-grid"><article class="install-card"><strong>Windows</strong><span>Desktop app with system-wide shortcut support.</span><a class="btn secondary" href="https://github.com/Mineparser/Mineparser/releases" target="_blank" rel="noreferrer">Download ↗</a></article><article class="install-card"><strong>macOS</strong><span>Desktop app with local data and copy support.</span><a class="btn secondary" href="https://github.com/Mineparser/Mineparser/releases" target="_blank" rel="noreferrer">Download ↗</a></article><article class="install-card"><strong>Linux</strong><span>AppImage and Debian packages are available.</span><a class="btn secondary" href="https://github.com/Mineparser/Mineparser/releases" target="_blank" rel="noreferrer">Download ↗</a></article><article class="install-card"><strong>Chrome / Edge</strong><span>Install the browser extension from the latest release.</span><a class="btn secondary" href="https://github.com/Mineparser/Mineparser/releases/latest/download/Mineparser-extension.zip" target="_blank" rel="noreferrer">Get extension ↗</a></article></div></section>
   <footer class="wrap">Mineparser · Desktop app and web companion · v0.1.0</footer>
-  <script>
-    const demoInput = document.getElementById('demoInput');
-    const demoStatus = document.getElementById('demoStatus');
-    demoInput.addEventListener('input', () => {
-      demoStatus.textContent = demoInput.value.length ? `${demoInput.value.length} characters · stored in this page only` : 'Your text stays in this page.';
-    });
-  </script>
 </body>
 </html>
