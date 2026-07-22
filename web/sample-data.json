@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "nodes": [
+    {
+      "id": "a",
+      "parent_id": null,
+      "nav_label": "Email reply",
+      "content": "Write a concise, friendly reply to this email. Keep the tone professional and include a clear next step."
+    },
+    {
+      "id": "b",
+      "parent_id": null,
+      "nav_label": "Code review",
+      "content": "Review this code for bugs, edge cases, and maintainability issues. Explain each finding and suggest a fix."
+    },
+    {
+      "id": "c",
+      "parent_id": null,
+      "nav_label": "Summarize text",
+      "content": "Summarize the following text in five concise bullet points, preserving the key decisions and action items."
+    },
+    {
+      "id": "d",
+      "parent_id": null,
+      "nav_label": "Terminal command",
+      "content": "Explain what this terminal command does, what it changes, and any risks before I run it."
+    }
+  ]
+}
